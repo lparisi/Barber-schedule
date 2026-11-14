@@ -286,6 +286,11 @@ button.row:active, a.row:active { background: var(--fill); }
 
 .group.wide { width: 100%; text-align: left; }
 .bubble { background: var(--surface); border-radius: 18px 18px 18px 6px; padding: 12px 14px; font-size: 16px; box-shadow: var(--shadow); overflow-wrap: anywhere; }
+
+.tick { width: 26px; height: 26px; border-radius: 50%; flex: none; border: 1.5px solid var(--label3); display: grid; place-items: center; color: var(--on-accent); }
+.tick.on { background: var(--accent); border-color: var(--accent); }
+.tick svg { width: 18px; height: 18px; }
+.sheet .group > h2 { font: 400 13px var(--font); text-align: left; }
 </style>
 </head>
 <body>
@@ -301,7 +306,7 @@ button.row:active, a.row:active { background: var(--fill); }
   address: 'Rod. Francisco Magno Vieira, 4397 · Campeche, Florianópolis - SC',
   phone: '(48) 99839-0862',
   accent: { light: '#1F5F4A', dark: '#5FD0A8' },
-  grid: 15,              // intervalo da grade de horários, em minutos
+  grid: 5,               // precisão da agenda, em minutos
   // Celular do cliente: 'required' (recebe a confirmação no WhatsApp),
   // 'optional' ou 'off'.
   askPhone: 'required',
@@ -323,18 +328,21 @@ button.row:active, a.row:active { background: var(--fill); }
     { id: 'pro2', name: 'Caio Martins', role: 'Barbeiro', services: null, off: [1] },
     { id: 'pro3', name: 'Miguel Duarte', role: 'Barbeiro', services: ['corte', 'barba', 'corte-barba', 'maquina', 'sobrancelha'], off: [3] }
   ],
+  // `min` aceita qualquer múltiplo de 5. `extra: true` = oferecido como
+  // adicional na confirmação. `kind` evita oferecer dois serviços do mesmo tipo.
+  // `bundle` = combo: quem soma as partes paga o preço e o tempo do combo.
   services: [
     { id: 'corte', name: 'Corte', price: 60, min: 30, group: 'Cabelo e barba' },
-    { id: 'barba', name: 'Barba Simples', price: 40, min: 30, group: 'Cabelo e barba' },
-    { id: 'barboterapia', name: 'Barboterapia', price: 60, min: 30, group: 'Cabelo e barba' },
-    { id: 'corte-barba', name: 'Cabelo + Barba Simples', price: 90, min: 60, group: 'Cabelo e barba' },
-    { id: 'corte-barboterapia', name: 'Cabelo + Barboterapia', price: 120, min: 60, group: 'Cabelo e barba' },
+    { id: 'barba', name: 'Barba Simples', price: 40, min: 30, extra: true, kind: 'barba', group: 'Cabelo e barba' },
+    { id: 'barboterapia', name: 'Barboterapia', price: 60, min: 30, extra: true, kind: 'barba', group: 'Cabelo e barba' },
+    { id: 'corte-barba', name: 'Cabelo + Barba Simples', price: 90, min: 60, bundle: ['corte', 'barba'], group: 'Cabelo e barba' },
+    { id: 'corte-barboterapia', name: 'Cabelo + Barboterapia', price: 120, min: 60, bundle: ['corte', 'barboterapia'], group: 'Cabelo e barba' },
     { id: 'maquina', name: 'Máquina', price: 40, min: 15, group: 'Cabelo e barba' },
-    { id: 'sobrancelha', name: 'Sobrancelha', price: 10, min: 15, group: 'Cuidados' },
-    { id: 'limpeza', name: 'Limpeza de Pele', price: 120, min: 30, group: 'Cuidados' },
-    { id: 'cera-nariz', name: 'Cera Nariz', price: 30, min: 15, group: 'Cuidados' },
-    { id: 'cera-orelha', name: 'Cera Orelha', price: 30, min: 15, group: 'Cuidados' },
-    { id: 'cera-nariz-orelha', name: 'Cera Nariz + Orelha', price: 45, min: 15, group: 'Cuidados' },
+    { id: 'sobrancelha', name: 'Sobrancelha', price: 10, min: 15, extra: true, group: 'Cuidados' },
+    { id: 'limpeza', name: 'Limpeza de Pele', price: 120, min: 30, extra: true, group: 'Cuidados' },
+    { id: 'cera-nariz', name: 'Cera Nariz', price: 30, min: 15, extra: true, kind: 'nariz', group: 'Cuidados' },
+    { id: 'cera-orelha', name: 'Cera Orelha', price: 30, min: 15, extra: true, kind: 'orelha', group: 'Cuidados' },
+    { id: 'cera-nariz-orelha', name: 'Cera Nariz + Orelha', price: 45, min: 15, bundle: ['cera-nariz', 'cera-orelha'], group: 'Cuidados' },
     { id: 'ass-corte', name: 'Corte Assinatura', plan: true, min: 15, group: 'Assinantes' },
     { id: 'ass-barba', name: 'Barba Assinatura', plan: true, min: 15, group: 'Assinantes' },
     { id: 'ass-corte-barba', name: 'Cabelo + Barba Assinatura', plan: true, min: 30, group: 'Assinantes' }
@@ -349,7 +357,7 @@ button.row:active, a.row:active { background: var(--fill); }
   address: 'Rua das Flores, 100 · Centro',
   phone: '(11) 90000-0000',
   accent: { light: '#3F3CC8', dark: '#9C9AFF' },
-  grid: 15,
+  grid: 5,
   // Celular do cliente: 'required' (recebe a confirmação no WhatsApp),
   // 'optional' ou 'off'.
   askPhone: 'required',
@@ -369,11 +377,11 @@ button.row:active, a.row:active { background: var(--fill); }
   ],
   services: [
     { id: 'corte', name: 'Corte', price: 55, min: 30, group: 'Cabelo e barba' },
-    { id: 'barba', name: 'Barba', price: 40, min: 30, group: 'Cabelo e barba' },
-    { id: 'corte-barba', name: 'Corte + Barba', price: 85, min: 60, group: 'Cabelo e barba' },
+    { id: 'barba', name: 'Barba', price: 40, min: 30, extra: true, group: 'Cabelo e barba' },
+    { id: 'corte-barba', name: 'Corte + Barba', price: 85, min: 60, bundle: ['corte', 'barba'], group: 'Cabelo e barba' },
     { id: 'maquina', name: 'Corte na máquina', price: 35, min: 15, group: 'Cabelo e barba' },
-    { id: 'sobrancelha', name: 'Sobrancelha', price: 15, min: 15, group: 'Cuidados' },
-    { id: 'hidratacao', name: 'Hidratação', price: 50, min: 30, group: 'Cuidados' }
+    { id: 'sobrancelha', name: 'Sobrancelha', price: 15, min: 15, extra: true, group: 'Cuidados' },
+    { id: 'hidratacao', name: 'Hidratação', price: 50, min: 30, extra: true, group: 'Cuidados' }
   ]
 });
 
@@ -2722,7 +2730,7 @@ var qrcode = function() {
     return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
   };
   B.money = function (v) { return 'R$ ' + (v % 1 ? v.toFixed(2).replace('.', ',') : v); };
-  B.priceLabel = function (s) { return !s ? 'A combinar' : s.plan ? 'No plano' : B.money(s.price); };
+  B.priceLabel = function (s) { return !s || s.none ? 'A combinar' : s.price ? B.money(s.price) : s.plan ? 'No plano' : 'A combinar'; };
 
   /* ---------- marca (white label) ---------- */
   B.tenants = window.TENANTS || [];
@@ -2740,6 +2748,35 @@ var qrcode = function() {
   };
   B.servicesOf = function (pro) {
     return B.tenant.services.filter(function (s) { return !pro || !pro.services || pro.services.indexOf(s.id) >= 0; });
+  };
+
+  /* ---------- serviço principal + adicionais ---------- */
+  // Soma duração e valor. Se as partes formam um combo, vale o combo.
+  B.total = function (serviceId, extras) {
+    if (!serviceId || !B.service(serviceId)) return { none: true, min: 30, price: 0, name: 'Serviço a decidir na hora' };
+    var ids = [serviceId].concat(extras || []);
+    B.tenant.services.forEach(function (b) {
+      if (b.bundle && b.bundle.every(function (id) { return ids.indexOf(id) >= 0; })) {
+        ids = ids.filter(function (id) { return b.bundle.indexOf(id) < 0; });
+        ids.unshift(b.id);
+      }
+    });
+    var list = ids.map(B.service);
+    return {
+      min: list.reduce(function (n, x) { return n + x.min; }, 0),
+      price: list.reduce(function (n, x) { return n + (x.price || 0); }, 0),
+      plan: list.some(function (x) { return x.plan; }),
+      name: list.map(function (x) { return x.name; }).join(' + ')
+    };
+  };
+  // Adicionais que fazem sentido oferecer junto do que já foi escolhido.
+  B.extrasFor = function (serviceId, extras, pro) {
+    var have = [], kinds = [];
+    [serviceId].concat(extras || []).forEach(function (id) { var x = B.service(id); have = have.concat(x.bundle || [id]); });
+    have.forEach(function (id) { var x = B.service(id); if (x && x.kind) kinds.push(x.kind); });
+    return B.servicesOf(pro).filter(function (x) {
+      return x.extra && have.indexOf(x.id) < 0 && (!x.kind || kinds.indexOf(x.kind) < 0);
+    });
   };
 
   /* ---------- agenda ---------- */
@@ -2776,13 +2813,34 @@ var qrcode = function() {
     });
     return out;
   };
+  // Cabe? Livre e inteiro dentro de um período de trabalho.
+  B.fits = function (pro, k, start, dur, ignoreId) {
+    return B.isFree(pro.id, k, start, dur, ignoreId) &&
+      B.periods(pro, k).some(function (r) { return start >= r[0] && start + dur <= r[1]; });
+  };
+  // Horários oferecidos ao cliente. A agenda tem precisão de 5 min, mas mostrar
+  // todos seria uma parede de botões e deixaria buracos sem uso entre clientes.
+  // Então cada trecho livre é oferecido "sem sobra": encostado no atendimento
+  // anterior, de serviço em serviço, e também encostado no seguinte.
+  B.offers = function (pro, k, dur) {
+    var all = B.slots(pro, k, dur);
+    if (B.tenant.clientSlots === 'all') return all;
+    var g = B.tenant.grid, out = [], i = 0;
+    while (i < all.length) {
+      var j = i; while (j + 1 < all.length && all[j + 1] === all[j] + g) j++;   // trecho contínuo all[i..j]
+      for (var t = all[i]; t <= all[j]; t += dur) out.push(t);
+      if (out[out.length - 1] !== all[j]) out.push(all[j]);
+      i = j + 1;
+    }
+    return out;
+  };
   // "Primeiro disponível": une as agendas e, em cada horário, escolhe quem
   // está com o dia mais leve, para distribuir os clientes entre a equipe.
   B.anySlots = function (pros, k, dur) {
     var map = {};
     pros.forEach(function (p) {
       var load = B.dayOf(p.id, k).filter(holds).length;
-      B.slots(p, k, dur).forEach(function (t) {
+      B.offers(p, k, dur).forEach(function (t) {
         if (!map[t] || load < map[t].load) map[t] = { t: t, proId: p.id, load: load };
       });
     });
@@ -2813,6 +2871,11 @@ var qrcode = function() {
     var a = B.find(id); if (!a) return;
     a.status = status; if (status !== 'booked') scrub(a);
     B.commit();
+  };
+  B.setDur = function (id, dur) {
+    var a = B.find(id);
+    if (!a || !B.isFree(a.proId, a.date, a.start, dur, a.id)) return false;
+    a.dur = dur; B.commit(); return true;
   };
   // Rede de segurança: nada com nome sobrevive à virada do dia.
   B.purge = function () {
@@ -2899,7 +2962,7 @@ var qrcode = function() {
   var mineKey = function () { return 'bs:' + B.tenant.id + ':mine'; };
   var S = {
     view: 'home', stack: [], tab: 'service',
-    serviceId: undefined, proId: undefined, date: null, quick: false, resched: null,
+    serviceId: undefined, proId: undefined, date: null, quick: false, resched: null, extras: [],
     sheet: null, form: {}, last: null,
     staff: { ok: false, pin: '', pro: B.tenant.pros[0].id, date: B.today() }
   };
@@ -2919,12 +2982,19 @@ var qrcode = function() {
   };
   var first = function (n) { return n.trim().split(/\s+/)[0]; };
   var svc = function () { return S.serviceId && S.serviceId !== 'none' ? B.service(S.serviceId) : null; };
-  var dur = function () { var s = svc(); return s ? s.min : 30; };
+  var tot = function () { return B.total(svc() ? svc().id : null, S.extras); };
+  var dur = function () { return tot().min; };
   var pros = function () {
     return S.proId && S.proId !== 'any' ? [B.pro(S.proId)] : B.prosFor(svc() ? svc().id : null);
   };
   var when = function (date, t) { return B.fmtDay(date) + ' às ' + B.fmtMin(t); };
-  var svcName = function (a) { var s = a.serviceId && B.service(a.serviceId); return s ? s.name : 'Serviço a decidir na hora'; };
+  var totOf = function (a) { return B.total(a.serviceId, a.extras); };
+  var svcName = function (a) { return totOf(a).name; };
+  var durOpts = function (sel, more) {
+    var o = ''; for (var m = 5; m <= 180; m += 5) o += '<option value="' + m + '"' + (m === +sel ? ' selected' : '') + '>' + B.fmtDur(m) + '</option>';
+    (more || []).forEach(function (m) { o += '<option value="' + m + '"' + (m === +sel ? ' selected' : '') + '>' + B.fmtDur(m) + '</option>'; });
+    return o;
+  };
   var wa = function (phone, text) { return 'https://wa.me/55' + B.digits(phone) + '?text=' + encodeURIComponent(text); };
   var nm = function (a) { return a.name || 'Cliente'; };
   var phoneMode = function () { return B.tenant.askPhone || 'optional'; };
@@ -2954,7 +3024,7 @@ var qrcode = function() {
       ':root[data-theme="dark"]{--accent:' + a.dark + '}';
     if (!window.__keepTitle) document.title = B.tenant.name;
   }
-  function resetFlow() { S.serviceId = S.proId = undefined; S.quick = false; S.resched = null; S.date = null; }
+  function resetFlow() { S.serviceId = S.proId = undefined; S.quick = false; S.resched = null; S.date = null; S.extras = []; }
   function go(v) { S.stack.push(S.view); S.view = v; }
   function toTime() {
     var k = B.today(), ps = pros(); S.date = k;
@@ -3056,7 +3126,7 @@ var qrcode = function() {
     var s = svc(), ps = pros(), d = dur(), k = B.today();
     var who = S.proId && S.proId !== 'any' ? 'com ' + esc(B.pro(S.proId).name) : 'primeiro disponível';
     var h = '<div class="page">' + nav() + '<header class="head"><h1 class="title">' + (S.resched ? 'Novo horário' : 'Quando?') + '</h1><p class="sub">' +
-      esc(s ? s.name : 'Serviço a decidir') + ' · ' + B.fmtDur(d) + ' · ' + who + '</p></header><div class="days">';
+      esc(s ? tot().name : 'Serviço a decidir') + ' · ' + B.fmtDur(d) + ' · ' + who + '</p></header><div class="days">';
     for (var i = 0; i < 14; i++, k = B.addDays(k, 1)) {
       var dt = B.parseKey(k), n = B.anySlots(ps, k, d).length;
       h += '<button class="day" data-a="pickDay" data-k="' + k + '" aria-pressed="' + (k === S.date) + '"' + (n ? '' : ' disabled') +
@@ -3081,7 +3151,7 @@ var qrcode = function() {
       esc(a.name) + '.</p></header><div class="ticket">' + qr((B.tenant.url ? B.tenant.url + '#r-' : '') + a.code) + '<div><small>Código do horário</small><b>' + B.fmtCode(a.code) +
       '</b><small>Mostre na barbearia. É ele que identifica o seu horário, não os seus dados.</small></div></div><div class="list">' +
       kv('Quando', B.fmtDay(a.date, true) + ' às ' + B.fmtMin(a.start)) + kv('Serviço', esc(svcName(a))) +
-      kv('Profissional', esc(p.name)) + kv('Valor', B.priceLabel(s)) + kv('Onde', esc(B.tenant.address)) + '</div><div class="stack">' +
+      kv('Profissional', esc(p.name)) + kv('Duração', B.fmtDur(a.dur)) + kv('Valor', B.priceLabel(totOf(a))) + kv('Onde', esc(B.tenant.address)) + '</div><div class="stack">' +
       '<button class="btn gray" data-a="home">Voltar ao início</button></div>' +
       (a.phone ? '<section class="group wide"><h2>Confirmação no WhatsApp · ' + esc(a.phone) + '</h2><div class="bubble">' + esc(B.confirmText(a)) +
         '</div><p class="foot">Prévia: nesta demonstração a mensagem ainda não é enviada.</p></section>' : '') +
@@ -3116,7 +3186,7 @@ var qrcode = function() {
   V.staff = function () {
     var st = S.staff, pro = B.pro(st.pro), rows = timeline(pro, st.date);
     var appts = rows.filter(function (r) { return r.a && r.a.kind !== 'block' && r.a.status !== 'noshow'; }).map(function (r) { return r.a; });
-    var total = appts.reduce(function (n, a) { var s = a.serviceId && B.service(a.serviceId); return n + (s && s.price || 0); }, 0);
+    var total = appts.reduce(function (n, a) { return n + totOf(a).price; }, 0);
     var h = '<div class="page wide">' + nav('Site', '<button class="txt" data-a="settings">Ajustes</button>') +
       '<header class="head"><h1 class="title">Agenda</h1></header><div class="chips" role="group" aria-label="Profissional">' +
       B.tenant.pros.map(function (p) {
@@ -3143,8 +3213,21 @@ var qrcode = function() {
 
   SH.confirm = function () {
     var x = S.sheet, s = svc(), p = B.pro(x.proId);
-    return sheet(S.resched ? 'Confirmar novo horário' : 'Confirmar', '<div class="list">' + kv('Quando', B.fmtDay(S.date, true) + ' às ' + B.fmtMin(x.t)) +
-      kv('Serviço', esc(s ? s.name : 'A decidir na hora')) + kv('Profissional', esc(p.name)) + kv('Valor', B.priceLabel(s)) + '</div>' +
+    var cur = tot(), ex = '';
+    if (s) {
+      var row = function (e, on) {
+        var other = B.total(s.id, on ? S.extras.filter(function (id) { return id !== e.id; }) : S.extras.concat(e.id));
+        var dm = Math.abs(other.min - cur.min), dp = Math.abs(other.price - cur.price);
+        if (!on && !B.fits(p, S.date, x.t, other.min)) return '';
+        return '<button type="button" class="row" data-a="extra" data-id="' + e.id + '" aria-pressed="' + on + '"><span class="tick' + (on ? ' on' : '') + '">' + (on ? I.check : '') +
+          '</span><span class="main"><b>' + esc(e.name) + '</b><small>+ ' + B.fmtDur(dm) + '</small></span><span class="val">+ ' + B.money(dp) + '</span></button>';
+      };
+      ex = S.extras.map(function (id) { return row(B.service(id), true); }).join('') +
+        B.extrasFor(s.id, S.extras, p).map(function (e) { return row(e, false); }).join('');
+      if (ex) ex = '<section class="group"><h2>Quer aproveitar e adicionar?</h2><div class="list">' + ex + '</div></section>';
+    }
+    return sheet(S.resched ? 'Confirmar novo horário' : 'Confirmar', '<div class="list">' + kv('Quando', B.fmtDay(S.date, true) + ', ' + B.fmtMin(x.t) + '–' + B.fmtMin(x.t + cur.min)) +
+      kv('Serviço', esc(cur.name)) + kv('Profissional', esc(p.name)) + kv('Duração', B.fmtDur(cur.min)) + kv('Valor', B.priceLabel(cur)) + '</div>' + ex +
       '<form class="stack" data-form="confirm" novalidate><div class="list"><div class="field"><label for="f-name">Nome</label><input id="f-name" data-f="name" autocomplete="given-name" autocapitalize="words" placeholder="Só o primeiro nome" value="' +
       esc(S.form.name) + '"></div>' + (phoneMode() === 'off' ? '' : '<div class="field"><label for="f-phone">Celular</label><input id="f-phone" data-f="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="' +
       (phoneMode() === 'optional' ? 'Opcional' : '(48) 90000-0000') + '" value="' + esc(S.form.phone) + '"></div>') +
@@ -3162,8 +3245,8 @@ var qrcode = function() {
 
   function staffSlots() {
     var f = S.form, pro = B.pro(S.staff.pro), s = B.service(f.serviceId);
-    if (f.mode === 'walkin') return B.slots(pro, B.today(), s.min);
-    return B.slots(pro, S.staff.date, f.mode === 'block' ? B.tenant.grid : s.min);
+    if (f.mode === 'walkin') return B.slots(pro, B.today(), +f.dur);
+    return B.slots(pro, S.staff.date, f.mode === 'block' ? B.tenant.grid : +f.dur);
   }
   SH.novo = function () {
     var f = S.form, pro = B.pro(S.staff.pro), opts = staffSlots(), block = f.mode === 'block';
@@ -3182,9 +3265,7 @@ var qrcode = function() {
     else fields += '<div class="field"><label for="s-start">Início</label><select id="s-start" data-f="start">' + (opts.length ? opts.map(function (t) {
       return '<option value="' + t + '"' + (t === +f.start ? ' selected' : '') + '>' + B.fmtMin(t) + '</option>';
     }).join('') : '<option value="">Sem vaga neste dia</option>') + '</select></div>';
-    if (block) fields += '<div class="field"><label for="s-dur">Duração</label><select id="s-dur" data-f="dur">' + [15, 30, 45, 60, 90, 120, 180, 240].map(function (m) {
-      return '<option value="' + m + '"' + (m === +f.dur ? ' selected' : '') + '>' + B.fmtDur(m) + '</option>';
-    }).join('') + '</select></div>';
+    fields += '<div class="field"><label for="s-dur">Duração</label><select id="s-dur" data-f="dur" data-r="1">' + durOpts(f.dur, block ? [240, 480] : []) + '</select></div>';
     return sheet('Agenda de ' + first(pro.name), seg + '<form class="stack" data-form="novo" novalidate><div class="list">' + fields +
       '</div><p class="err" role="alert"></p><button class="btn" type="submit">' + (block ? 'Bloquear horário' : f.mode === 'walkin' ? 'Colocar na agenda' : 'Marcar horário') + '</button></form>', 'Cancelar');
   };
@@ -3192,7 +3273,9 @@ var qrcode = function() {
   SH.appt = function () {
     var a = B.find(S.sheet.id), s = a.serviceId && B.service(a.serviceId), block = a.kind === 'block';
     var rows = kv('Horário', B.fmtMin(a.start) + '–' + B.fmtMin(a.start + a.dur));
-    if (!block) rows += kv('Serviço', esc(svcName(a))) + kv('Valor', B.priceLabel(s)) + kv('Origem', a.kind === 'walkin' ? 'Encaixe' : 'Agendado') + (a.phone ? kv('Celular', esc(a.phone)) : '') + (a.code ? kv('Código', B.fmtCode(a.code)) : '');
+    var durField = a.status === 'booked' ? '<div class="list"><div class="field"><label for="a-dur">Duração</label><select id="a-dur" data-setdur="1">' +
+      durOpts(a.dur, a.dur > 180 || a.dur % 5 ? [a.dur] : []) + '</select></div></div>' : '';
+    if (!block) rows += kv('Serviço', esc(svcName(a))) + kv('Valor', B.priceLabel(totOf(a))) + kv('Origem', a.kind === 'walkin' ? 'Encaixe' : 'Agendado') + (a.phone ? kv('Celular', esc(a.phone)) : '') + (a.code ? kv('Código', B.fmtCode(a.code)) : '');
     else if (a.note) rows += kv('Motivo', esc(a.note));
     var btns = '';
     if (block) btns = '<button class="btn danger" data-a="status" data-s="cancelled">Remover bloqueio</button>';
@@ -3200,7 +3283,7 @@ var qrcode = function() {
       (a.phone ? '<a class="btn tinted" target="_blank" rel="noopener" href="' + wa(a.phone, B.confirmText(a)) + '">Enviar confirmação no WhatsApp</a>' : '') +
       '<button class="btn gray" data-a="status" data-s="noshow">Não compareceu</button><button class="btn danger" data-a="status" data-s="cancelled">Cancelar horário</button>';
     else btns = '<button class="btn gray" data-a="status" data-s="booked">Reabrir</button>';
-    return sheet(block ? 'Bloqueado' : nm(a), '<div class="list">' + rows + '</div><div class="stack">' + btns + '</div>');
+    return sheet(block ? 'Bloqueado' : nm(a), '<div class="list">' + rows + '</div>' + durField + '<div class="stack">' + btns + '</div>');
   };
 
   SH.privacy = function () {
@@ -3233,7 +3316,8 @@ var qrcode = function() {
       S.view = S.stack.pop() || 'home';
       if (S.view === 'home') { resetFlow(); if (location.hash) history.replaceState(null, '', location.pathname + location.search); }
     },
-    closeSheet: function () { S.sheet = null; },
+    closeSheet: function () { if (S.sheet && S.sheet.type === 'confirm' && !S.resched) S.extras = []; S.sheet = null; },
+    extra: function (d) { var i = S.extras.indexOf(d.id); if (i >= 0) S.extras.splice(i, 1); else S.extras.push(d.id); },
     quick: function () { resetFlow(); S.quick = true; S.proId = 'any'; go('service'); },
     privacy: function () { S.sheet = { type: 'privacy' }; },
     askForget: function () { S.sheet.sure = true; },
@@ -3256,7 +3340,7 @@ var qrcode = function() {
     pickTime: function (d) { openConfirm(+d.t, d.pro); },
     resched: function (d) {
       var a = B.find(d.id); resetFlow();
-      S.resched = a.id; S.serviceId = a.serviceId || 'none'; S.proId = a.proId; toTime();
+      S.resched = a.id; S.serviceId = a.serviceId || 'none'; S.extras = (a.extras || []).slice(); S.proId = a.proId; toTime();
     },
     askCancel: function (d) { S.sheet = { type: 'cancel', id: d.id }; },
     doCancel: function (d) { B.setStatus(d.id, 'cancelled'); S.sheet = null; toast('Horário cancelado'); },
@@ -3279,11 +3363,16 @@ var qrcode = function() {
     newWalkin: function () { openNovo('walkin'); },
     newBlock: function () { openNovo('block'); },
     newAt: function (d) { openNovo('book', +d.t); },
-    mode: function (d) { S.form.mode = d.m; },
+    mode: function (d) { S.form.mode = d.m; S.form.dur = d.m === 'block' ? 60 : B.service(S.form.serviceId).min; },
     openAppt: function (d) { S.sheet = { type: 'appt', id: d.id }; },
     status: function (d) {
       var a = B.find(S.sheet.id);
       if (d.s === 'booked' && !B.isFree(a.proId, a.date, a.start, a.dur, a.id)) return toast('Esse horário já foi ocupado por outro cliente');
+      // Terminou antes do previsto: o tempo que sobrou volta a ficar livre.
+      if (d.s === 'done' && a.date === B.today()) {
+        var g = B.tenant.grid, used = Math.ceil((B.nowMin() - a.start) / g) * g;
+        if (used >= g && used < a.dur) a.dur = used;
+      }
       B.setStatus(a.id, d.s); S.sheet = null;
       toast({ done: 'Atendimento concluído', noshow: 'Marcado como falta', cancelled: a.kind === 'block' ? 'Bloqueio removido' : 'Horário cancelado', booked: 'Horário reaberto' }[d.s]);
     }
@@ -3291,6 +3380,7 @@ var qrcode = function() {
   function openConfirm(t, proId) { S.form = { name: me.name, phone: me.phone, remember: !!me.name }; S.sheet = { type: 'confirm', t: t, proId: proId }; }
   function openNovo(mode, start) {
     S.form = { mode: mode, name: '', phone: '', note: '', serviceId: B.servicesOf(B.pro(S.staff.pro))[0].id, start: start, dur: 60 };
+    if (mode !== 'block') S.form.dur = B.service(S.form.serviceId).min;
     S.sheet = { type: 'novo' };
   }
 
@@ -3300,7 +3390,7 @@ var qrcode = function() {
       if (name.length < 2) return err('Digite o seu primeiro nome.');
       if (!phoneOk()) return err('Confira o celular: DDD + número, por exemplo (48) 99999-0000.');
       var a = B.book({
-        proId: x.proId, serviceId: svc() ? svc().id : null, date: S.date, start: x.t, dur: dur(), name: name, phone: phoneMode() === 'off' ? '' : B.maskPhone(f.phone),
+        proId: x.proId, serviceId: svc() ? svc().id : null, extras: S.extras.slice(), date: S.date, start: x.t, dur: dur(), name: name, phone: phoneMode() === 'off' ? '' : B.maskPhone(f.phone),
         kind: 'booking'
       });
       if (!a) { S.sheet = null; toast('Esse horário acabou de ser ocupado. Escolha outro.'); return true; }
@@ -3321,7 +3411,7 @@ var qrcode = function() {
         if (!opts.length) return err(walk ? 'Sem vaga hoje para esse serviço na agenda de ' + first(B.pro(st.pro).name) + '.' : 'Não há horário livre neste dia para esse serviço.');
         if (!walk && name.length < 2) return err('Digite o nome do cliente.');
         a = B.book({
-          proId: st.pro, serviceId: s.id, date: walk ? B.today() : st.date, start: walk ? opts[0] : +f.start, dur: s.min,
+          proId: st.pro, serviceId: s.id, date: walk ? B.today() : st.date, start: walk ? opts[0] : +f.start, dur: +f.dur,
           name: name || 'Cliente sem hora marcada', phone: B.maskPhone(f.phone), kind: walk ? 'walkin' : 'booking'
         });
         if (a && walk) st.date = B.today();
@@ -3335,9 +3425,10 @@ var qrcode = function() {
   /* ---------- desenho e eventos ---------- */
   var lastView = null;
   function render() {
-    var h = V[S.view]();
+    var h = V[S.view](), old = $app.querySelector('.sheet'), top = old ? old.scrollTop : 0, same = S.sheet && lastSheet === S.sheet.type;
     if (S.sheet) h += SH[S.sheet.type]();
     $app.innerHTML = h;
+    if (same) $app.querySelector('.sheet').scrollTop = top;
     lastSheet = S.sheet ? S.sheet.type : null;
     document.body.style.overflow = S.sheet ? 'hidden' : '';
     if (S.view !== lastView) { window.scrollTo(0, 0); lastView = S.view; }
@@ -3352,12 +3443,17 @@ var qrcode = function() {
     render();
   });
   $app.addEventListener('input', function (e) {
+    if (e.target.dataset.setdur) {
+      if (!B.setDur(S.sheet.id, +e.target.value)) toast('Não cabe: há outro horário logo depois');
+      return render();
+    }
     var f = e.target.dataset.f; if (!f) return;
     if (e.target.type === 'tel') e.target.value = B.maskPhone(e.target.value);
     S.form[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     var fm = e.target.form;
     if (fm && fm.dataset.form === 'confirm') fm.querySelector('[type=submit]').disabled = !validConfirm();
     var box = e.target.form && e.target.form.querySelector('.err'); if (box) box.textContent = '';
+    if (f === 'serviceId') S.form.dur = B.service(e.target.value).min;
     if (e.target.dataset.r) render();
   });
   // Valida o celular assim que a pessoa sai do campo, sem esperar o envio.

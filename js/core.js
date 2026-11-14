@@ -45,7 +45,7 @@
     return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
   };
   B.money = function (v) { return 'R$ ' + (v % 1 ? v.toFixed(2).replace('.', ',') : v); };
-  B.priceLabel = function (s) { return !s ? 'A combinar' : s.plan ? 'No plano' : B.money(s.price); };
+  B.priceLabel = function (s) { return !s || s.none ? 'A combinar' : s.price ? B.money(s.price) : s.plan ? 'No plano' : 'A combinar'; };
 
   /* ---------- marca (white label) ---------- */
   B.tenants = window.TENANTS || [];
@@ -63,6 +63,35 @@
   };
   B.servicesOf = function (pro) {
     return B.tenant.services.filter(function (s) { return !pro || !pro.services || pro.services.indexOf(s.id) >= 0; });
+  };
+
+  /* ---------- serviço principal + adicionais ---------- */
+  // Soma duração e valor. Se as partes formam um combo, vale o combo.
+  B.total = function (serviceId, extras) {
+    if (!serviceId || !B.service(serviceId)) return { none: true, min: 30, price: 0, name: 'Serviço a decidir na hora' };
+    var ids = [serviceId].concat(extras || []);
+    B.tenant.services.forEach(function (b) {
+      if (b.bundle && b.bundle.every(function (id) { return ids.indexOf(id) >= 0; })) {
+        ids = ids.filter(function (id) { return b.bundle.indexOf(id) < 0; });
+        ids.unshift(b.id);
+      }
+    });
+    var list = ids.map(B.service);
+    return {
+      min: list.reduce(function (n, x) { return n + x.min; }, 0),
+      price: list.reduce(function (n, x) { return n + (x.price || 0); }, 0),
+      plan: list.some(function (x) { return x.plan; }),
+      name: list.map(function (x) { return x.name; }).join(' + ')
+    };
+  };
+  // Adicionais que fazem sentido oferecer junto do que já foi escolhido.
+  B.extrasFor = function (serviceId, extras, pro) {
+    var have = [], kinds = [];
+    [serviceId].concat(extras || []).forEach(function (id) { var x = B.service(id); have = have.concat(x.bundle || [id]); });
+    have.forEach(function (id) { var x = B.service(id); if (x && x.kind) kinds.push(x.kind); });
+    return B.servicesOf(pro).filter(function (x) {
+      return x.extra && have.indexOf(x.id) < 0 && (!x.kind || kinds.indexOf(x.kind) < 0);
+    });
   };
 
   /* ---------- agenda ---------- */
@@ -99,13 +128,34 @@
     });
     return out;
   };
+  // Cabe? Livre e inteiro dentro de um período de trabalho.
+  B.fits = function (pro, k, start, dur, ignoreId) {
+    return B.isFree(pro.id, k, start, dur, ignoreId) &&
+      B.periods(pro, k).some(function (r) { return start >= r[0] && start + dur <= r[1]; });
+  };
+  // Horários oferecidos ao cliente. A agenda tem precisão de 5 min, mas mostrar
+  // todos seria uma parede de botões e deixaria buracos sem uso entre clientes.
+  // Então cada trecho livre é oferecido "sem sobra": encostado no atendimento
+  // anterior, de serviço em serviço, e também encostado no seguinte.
+  B.offers = function (pro, k, dur) {
+    var all = B.slots(pro, k, dur);
+    if (B.tenant.clientSlots === 'all') return all;
+    var g = B.tenant.grid, out = [], i = 0;
+    while (i < all.length) {
+      var j = i; while (j + 1 < all.length && all[j + 1] === all[j] + g) j++;   // trecho contínuo all[i..j]
+      for (var t = all[i]; t <= all[j]; t += dur) out.push(t);
+      if (out[out.length - 1] !== all[j]) out.push(all[j]);
+      i = j + 1;
+    }
+    return out;
+  };
   // "Primeiro disponível": une as agendas e, em cada horário, escolhe quem
   // está com o dia mais leve, para distribuir os clientes entre a equipe.
   B.anySlots = function (pros, k, dur) {
     var map = {};
     pros.forEach(function (p) {
       var load = B.dayOf(p.id, k).filter(holds).length;
-      B.slots(p, k, dur).forEach(function (t) {
+      B.offers(p, k, dur).forEach(function (t) {
         if (!map[t] || load < map[t].load) map[t] = { t: t, proId: p.id, load: load };
       });
     });
@@ -136,6 +186,11 @@
     var a = B.find(id); if (!a) return;
     a.status = status; if (status !== 'booked') scrub(a);
     B.commit();
+  };
+  B.setDur = function (id, dur) {
+    var a = B.find(id);
+    if (!a || !B.isFree(a.proId, a.date, a.start, dur, a.id)) return false;
+    a.dur = dur; B.commit(); return true;
   };
   // Rede de segurança: nada com nome sobrevive à virada do dia.
   B.purge = function () {

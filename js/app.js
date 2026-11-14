@@ -14,7 +14,7 @@
   var mineKey = function () { return 'bs:' + B.tenant.id + ':mine'; };
   var S = {
     view: 'home', stack: [], tab: 'service',
-    serviceId: undefined, proId: undefined, date: null, quick: false, resched: null,
+    serviceId: undefined, proId: undefined, date: null, quick: false, resched: null, extras: [],
     sheet: null, form: {}, last: null,
     staff: { ok: false, pin: '', pro: B.tenant.pros[0].id, date: B.today() }
   };
@@ -34,12 +34,19 @@
   };
   var first = function (n) { return n.trim().split(/\s+/)[0]; };
   var svc = function () { return S.serviceId && S.serviceId !== 'none' ? B.service(S.serviceId) : null; };
-  var dur = function () { var s = svc(); return s ? s.min : 30; };
+  var tot = function () { return B.total(svc() ? svc().id : null, S.extras); };
+  var dur = function () { return tot().min; };
   var pros = function () {
     return S.proId && S.proId !== 'any' ? [B.pro(S.proId)] : B.prosFor(svc() ? svc().id : null);
   };
   var when = function (date, t) { return B.fmtDay(date) + ' às ' + B.fmtMin(t); };
-  var svcName = function (a) { var s = a.serviceId && B.service(a.serviceId); return s ? s.name : 'Serviço a decidir na hora'; };
+  var totOf = function (a) { return B.total(a.serviceId, a.extras); };
+  var svcName = function (a) { return totOf(a).name; };
+  var durOpts = function (sel, more) {
+    var o = ''; for (var m = 5; m <= 180; m += 5) o += '<option value="' + m + '"' + (m === +sel ? ' selected' : '') + '>' + B.fmtDur(m) + '</option>';
+    (more || []).forEach(function (m) { o += '<option value="' + m + '"' + (m === +sel ? ' selected' : '') + '>' + B.fmtDur(m) + '</option>'; });
+    return o;
+  };
   var wa = function (phone, text) { return 'https://wa.me/55' + B.digits(phone) + '?text=' + encodeURIComponent(text); };
   var nm = function (a) { return a.name || 'Cliente'; };
   var phoneMode = function () { return B.tenant.askPhone || 'optional'; };
@@ -69,7 +76,7 @@
       ':root[data-theme="dark"]{--accent:' + a.dark + '}';
     if (!window.__keepTitle) document.title = B.tenant.name;
   }
-  function resetFlow() { S.serviceId = S.proId = undefined; S.quick = false; S.resched = null; S.date = null; }
+  function resetFlow() { S.serviceId = S.proId = undefined; S.quick = false; S.resched = null; S.date = null; S.extras = []; }
   function go(v) { S.stack.push(S.view); S.view = v; }
   function toTime() {
     var k = B.today(), ps = pros(); S.date = k;
@@ -171,7 +178,7 @@
     var s = svc(), ps = pros(), d = dur(), k = B.today();
     var who = S.proId && S.proId !== 'any' ? 'com ' + esc(B.pro(S.proId).name) : 'primeiro disponível';
     var h = '<div class="page">' + nav() + '<header class="head"><h1 class="title">' + (S.resched ? 'Novo horário' : 'Quando?') + '</h1><p class="sub">' +
-      esc(s ? s.name : 'Serviço a decidir') + ' · ' + B.fmtDur(d) + ' · ' + who + '</p></header><div class="days">';
+      esc(s ? tot().name : 'Serviço a decidir') + ' · ' + B.fmtDur(d) + ' · ' + who + '</p></header><div class="days">';
     for (var i = 0; i < 14; i++, k = B.addDays(k, 1)) {
       var dt = B.parseKey(k), n = B.anySlots(ps, k, d).length;
       h += '<button class="day" data-a="pickDay" data-k="' + k + '" aria-pressed="' + (k === S.date) + '"' + (n ? '' : ' disabled') +
@@ -196,7 +203,7 @@
       esc(a.name) + '.</p></header><div class="ticket">' + qr((B.tenant.url ? B.tenant.url + '#r-' : '') + a.code) + '<div><small>Código do horário</small><b>' + B.fmtCode(a.code) +
       '</b><small>Mostre na barbearia. É ele que identifica o seu horário, não os seus dados.</small></div></div><div class="list">' +
       kv('Quando', B.fmtDay(a.date, true) + ' às ' + B.fmtMin(a.start)) + kv('Serviço', esc(svcName(a))) +
-      kv('Profissional', esc(p.name)) + kv('Valor', B.priceLabel(s)) + kv('Onde', esc(B.tenant.address)) + '</div><div class="stack">' +
+      kv('Profissional', esc(p.name)) + kv('Duração', B.fmtDur(a.dur)) + kv('Valor', B.priceLabel(totOf(a))) + kv('Onde', esc(B.tenant.address)) + '</div><div class="stack">' +
       '<button class="btn gray" data-a="home">Voltar ao início</button></div>' +
       (a.phone ? '<section class="group wide"><h2>Confirmação no WhatsApp · ' + esc(a.phone) + '</h2><div class="bubble">' + esc(B.confirmText(a)) +
         '</div><p class="foot">Prévia: nesta demonstração a mensagem ainda não é enviada.</p></section>' : '') +
@@ -231,7 +238,7 @@
   V.staff = function () {
     var st = S.staff, pro = B.pro(st.pro), rows = timeline(pro, st.date);
     var appts = rows.filter(function (r) { return r.a && r.a.kind !== 'block' && r.a.status !== 'noshow'; }).map(function (r) { return r.a; });
-    var total = appts.reduce(function (n, a) { var s = a.serviceId && B.service(a.serviceId); return n + (s && s.price || 0); }, 0);
+    var total = appts.reduce(function (n, a) { return n + totOf(a).price; }, 0);
     var h = '<div class="page wide">' + nav('Site', '<button class="txt" data-a="settings">Ajustes</button>') +
       '<header class="head"><h1 class="title">Agenda</h1></header><div class="chips" role="group" aria-label="Profissional">' +
       B.tenant.pros.map(function (p) {
@@ -258,8 +265,21 @@
 
   SH.confirm = function () {
     var x = S.sheet, s = svc(), p = B.pro(x.proId);
-    return sheet(S.resched ? 'Confirmar novo horário' : 'Confirmar', '<div class="list">' + kv('Quando', B.fmtDay(S.date, true) + ' às ' + B.fmtMin(x.t)) +
-      kv('Serviço', esc(s ? s.name : 'A decidir na hora')) + kv('Profissional', esc(p.name)) + kv('Valor', B.priceLabel(s)) + '</div>' +
+    var cur = tot(), ex = '';
+    if (s) {
+      var row = function (e, on) {
+        var other = B.total(s.id, on ? S.extras.filter(function (id) { return id !== e.id; }) : S.extras.concat(e.id));
+        var dm = Math.abs(other.min - cur.min), dp = Math.abs(other.price - cur.price);
+        if (!on && !B.fits(p, S.date, x.t, other.min)) return '';
+        return '<button type="button" class="row" data-a="extra" data-id="' + e.id + '" aria-pressed="' + on + '"><span class="tick' + (on ? ' on' : '') + '">' + (on ? I.check : '') +
+          '</span><span class="main"><b>' + esc(e.name) + '</b><small>+ ' + B.fmtDur(dm) + '</small></span><span class="val">+ ' + B.money(dp) + '</span></button>';
+      };
+      ex = S.extras.map(function (id) { return row(B.service(id), true); }).join('') +
+        B.extrasFor(s.id, S.extras, p).map(function (e) { return row(e, false); }).join('');
+      if (ex) ex = '<section class="group"><h2>Quer aproveitar e adicionar?</h2><div class="list">' + ex + '</div></section>';
+    }
+    return sheet(S.resched ? 'Confirmar novo horário' : 'Confirmar', '<div class="list">' + kv('Quando', B.fmtDay(S.date, true) + ', ' + B.fmtMin(x.t) + '–' + B.fmtMin(x.t + cur.min)) +
+      kv('Serviço', esc(cur.name)) + kv('Profissional', esc(p.name)) + kv('Duração', B.fmtDur(cur.min)) + kv('Valor', B.priceLabel(cur)) + '</div>' + ex +
       '<form class="stack" data-form="confirm" novalidate><div class="list"><div class="field"><label for="f-name">Nome</label><input id="f-name" data-f="name" autocomplete="given-name" autocapitalize="words" placeholder="Só o primeiro nome" value="' +
       esc(S.form.name) + '"></div>' + (phoneMode() === 'off' ? '' : '<div class="field"><label for="f-phone">Celular</label><input id="f-phone" data-f="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="' +
       (phoneMode() === 'optional' ? 'Opcional' : '(48) 90000-0000') + '" value="' + esc(S.form.phone) + '"></div>') +
@@ -277,8 +297,8 @@
 
   function staffSlots() {
     var f = S.form, pro = B.pro(S.staff.pro), s = B.service(f.serviceId);
-    if (f.mode === 'walkin') return B.slots(pro, B.today(), s.min);
-    return B.slots(pro, S.staff.date, f.mode === 'block' ? B.tenant.grid : s.min);
+    if (f.mode === 'walkin') return B.slots(pro, B.today(), +f.dur);
+    return B.slots(pro, S.staff.date, f.mode === 'block' ? B.tenant.grid : +f.dur);
   }
   SH.novo = function () {
     var f = S.form, pro = B.pro(S.staff.pro), opts = staffSlots(), block = f.mode === 'block';
@@ -297,9 +317,7 @@
     else fields += '<div class="field"><label for="s-start">Início</label><select id="s-start" data-f="start">' + (opts.length ? opts.map(function (t) {
       return '<option value="' + t + '"' + (t === +f.start ? ' selected' : '') + '>' + B.fmtMin(t) + '</option>';
     }).join('') : '<option value="">Sem vaga neste dia</option>') + '</select></div>';
-    if (block) fields += '<div class="field"><label for="s-dur">Duração</label><select id="s-dur" data-f="dur">' + [15, 30, 45, 60, 90, 120, 180, 240].map(function (m) {
-      return '<option value="' + m + '"' + (m === +f.dur ? ' selected' : '') + '>' + B.fmtDur(m) + '</option>';
-    }).join('') + '</select></div>';
+    fields += '<div class="field"><label for="s-dur">Duração</label><select id="s-dur" data-f="dur" data-r="1">' + durOpts(f.dur, block ? [240, 480] : []) + '</select></div>';
     return sheet('Agenda de ' + first(pro.name), seg + '<form class="stack" data-form="novo" novalidate><div class="list">' + fields +
       '</div><p class="err" role="alert"></p><button class="btn" type="submit">' + (block ? 'Bloquear horário' : f.mode === 'walkin' ? 'Colocar na agenda' : 'Marcar horário') + '</button></form>', 'Cancelar');
   };
@@ -307,7 +325,9 @@
   SH.appt = function () {
     var a = B.find(S.sheet.id), s = a.serviceId && B.service(a.serviceId), block = a.kind === 'block';
     var rows = kv('Horário', B.fmtMin(a.start) + '–' + B.fmtMin(a.start + a.dur));
-    if (!block) rows += kv('Serviço', esc(svcName(a))) + kv('Valor', B.priceLabel(s)) + kv('Origem', a.kind === 'walkin' ? 'Encaixe' : 'Agendado') + (a.phone ? kv('Celular', esc(a.phone)) : '') + (a.code ? kv('Código', B.fmtCode(a.code)) : '');
+    var durField = a.status === 'booked' ? '<div class="list"><div class="field"><label for="a-dur">Duração</label><select id="a-dur" data-setdur="1">' +
+      durOpts(a.dur, a.dur > 180 || a.dur % 5 ? [a.dur] : []) + '</select></div></div>' : '';
+    if (!block) rows += kv('Serviço', esc(svcName(a))) + kv('Valor', B.priceLabel(totOf(a))) + kv('Origem', a.kind === 'walkin' ? 'Encaixe' : 'Agendado') + (a.phone ? kv('Celular', esc(a.phone)) : '') + (a.code ? kv('Código', B.fmtCode(a.code)) : '');
     else if (a.note) rows += kv('Motivo', esc(a.note));
     var btns = '';
     if (block) btns = '<button class="btn danger" data-a="status" data-s="cancelled">Remover bloqueio</button>';
@@ -315,7 +335,7 @@
       (a.phone ? '<a class="btn tinted" target="_blank" rel="noopener" href="' + wa(a.phone, B.confirmText(a)) + '">Enviar confirmação no WhatsApp</a>' : '') +
       '<button class="btn gray" data-a="status" data-s="noshow">Não compareceu</button><button class="btn danger" data-a="status" data-s="cancelled">Cancelar horário</button>';
     else btns = '<button class="btn gray" data-a="status" data-s="booked">Reabrir</button>';
-    return sheet(block ? 'Bloqueado' : nm(a), '<div class="list">' + rows + '</div><div class="stack">' + btns + '</div>');
+    return sheet(block ? 'Bloqueado' : nm(a), '<div class="list">' + rows + '</div>' + durField + '<div class="stack">' + btns + '</div>');
   };
 
   SH.privacy = function () {
@@ -348,7 +368,8 @@
       S.view = S.stack.pop() || 'home';
       if (S.view === 'home') { resetFlow(); if (location.hash) history.replaceState(null, '', location.pathname + location.search); }
     },
-    closeSheet: function () { S.sheet = null; },
+    closeSheet: function () { if (S.sheet && S.sheet.type === 'confirm' && !S.resched) S.extras = []; S.sheet = null; },
+    extra: function (d) { var i = S.extras.indexOf(d.id); if (i >= 0) S.extras.splice(i, 1); else S.extras.push(d.id); },
     quick: function () { resetFlow(); S.quick = true; S.proId = 'any'; go('service'); },
     privacy: function () { S.sheet = { type: 'privacy' }; },
     askForget: function () { S.sheet.sure = true; },
@@ -371,7 +392,7 @@
     pickTime: function (d) { openConfirm(+d.t, d.pro); },
     resched: function (d) {
       var a = B.find(d.id); resetFlow();
-      S.resched = a.id; S.serviceId = a.serviceId || 'none'; S.proId = a.proId; toTime();
+      S.resched = a.id; S.serviceId = a.serviceId || 'none'; S.extras = (a.extras || []).slice(); S.proId = a.proId; toTime();
     },
     askCancel: function (d) { S.sheet = { type: 'cancel', id: d.id }; },
     doCancel: function (d) { B.setStatus(d.id, 'cancelled'); S.sheet = null; toast('Horário cancelado'); },
@@ -394,11 +415,16 @@
     newWalkin: function () { openNovo('walkin'); },
     newBlock: function () { openNovo('block'); },
     newAt: function (d) { openNovo('book', +d.t); },
-    mode: function (d) { S.form.mode = d.m; },
+    mode: function (d) { S.form.mode = d.m; S.form.dur = d.m === 'block' ? 60 : B.service(S.form.serviceId).min; },
     openAppt: function (d) { S.sheet = { type: 'appt', id: d.id }; },
     status: function (d) {
       var a = B.find(S.sheet.id);
       if (d.s === 'booked' && !B.isFree(a.proId, a.date, a.start, a.dur, a.id)) return toast('Esse horário já foi ocupado por outro cliente');
+      // Terminou antes do previsto: o tempo que sobrou volta a ficar livre.
+      if (d.s === 'done' && a.date === B.today()) {
+        var g = B.tenant.grid, used = Math.ceil((B.nowMin() - a.start) / g) * g;
+        if (used >= g && used < a.dur) a.dur = used;
+      }
       B.setStatus(a.id, d.s); S.sheet = null;
       toast({ done: 'Atendimento concluído', noshow: 'Marcado como falta', cancelled: a.kind === 'block' ? 'Bloqueio removido' : 'Horário cancelado', booked: 'Horário reaberto' }[d.s]);
     }
@@ -406,6 +432,7 @@
   function openConfirm(t, proId) { S.form = { name: me.name, phone: me.phone, remember: !!me.name }; S.sheet = { type: 'confirm', t: t, proId: proId }; }
   function openNovo(mode, start) {
     S.form = { mode: mode, name: '', phone: '', note: '', serviceId: B.servicesOf(B.pro(S.staff.pro))[0].id, start: start, dur: 60 };
+    if (mode !== 'block') S.form.dur = B.service(S.form.serviceId).min;
     S.sheet = { type: 'novo' };
   }
 
@@ -415,7 +442,7 @@
       if (name.length < 2) return err('Digite o seu primeiro nome.');
       if (!phoneOk()) return err('Confira o celular: DDD + número, por exemplo (48) 99999-0000.');
       var a = B.book({
-        proId: x.proId, serviceId: svc() ? svc().id : null, date: S.date, start: x.t, dur: dur(), name: name, phone: phoneMode() === 'off' ? '' : B.maskPhone(f.phone),
+        proId: x.proId, serviceId: svc() ? svc().id : null, extras: S.extras.slice(), date: S.date, start: x.t, dur: dur(), name: name, phone: phoneMode() === 'off' ? '' : B.maskPhone(f.phone),
         kind: 'booking'
       });
       if (!a) { S.sheet = null; toast('Esse horário acabou de ser ocupado. Escolha outro.'); return true; }
@@ -436,7 +463,7 @@
         if (!opts.length) return err(walk ? 'Sem vaga hoje para esse serviço na agenda de ' + first(B.pro(st.pro).name) + '.' : 'Não há horário livre neste dia para esse serviço.');
         if (!walk && name.length < 2) return err('Digite o nome do cliente.');
         a = B.book({
-          proId: st.pro, serviceId: s.id, date: walk ? B.today() : st.date, start: walk ? opts[0] : +f.start, dur: s.min,
+          proId: st.pro, serviceId: s.id, date: walk ? B.today() : st.date, start: walk ? opts[0] : +f.start, dur: +f.dur,
           name: name || 'Cliente sem hora marcada', phone: B.maskPhone(f.phone), kind: walk ? 'walkin' : 'booking'
         });
         if (a && walk) st.date = B.today();
@@ -450,9 +477,10 @@
   /* ---------- desenho e eventos ---------- */
   var lastView = null;
   function render() {
-    var h = V[S.view]();
+    var h = V[S.view](), old = $app.querySelector('.sheet'), top = old ? old.scrollTop : 0, same = S.sheet && lastSheet === S.sheet.type;
     if (S.sheet) h += SH[S.sheet.type]();
     $app.innerHTML = h;
+    if (same) $app.querySelector('.sheet').scrollTop = top;
     lastSheet = S.sheet ? S.sheet.type : null;
     document.body.style.overflow = S.sheet ? 'hidden' : '';
     if (S.view !== lastView) { window.scrollTo(0, 0); lastView = S.view; }
@@ -467,12 +495,17 @@
     render();
   });
   $app.addEventListener('input', function (e) {
+    if (e.target.dataset.setdur) {
+      if (!B.setDur(S.sheet.id, +e.target.value)) toast('Não cabe: há outro horário logo depois');
+      return render();
+    }
     var f = e.target.dataset.f; if (!f) return;
     if (e.target.type === 'tel') e.target.value = B.maskPhone(e.target.value);
     S.form[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     var fm = e.target.form;
     if (fm && fm.dataset.form === 'confirm') fm.querySelector('[type=submit]').disabled = !validConfirm();
     var box = e.target.form && e.target.form.querySelector('.err'); if (box) box.textContent = '';
+    if (f === 'serviceId') S.form.dur = B.service(e.target.value).min;
     if (e.target.dataset.r) render();
   });
   // Valida o celular assim que a pessoa sai do campo, sem esperar o envio.

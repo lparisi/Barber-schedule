@@ -21,6 +21,20 @@ de demonstração `1234`.
 O cartão "Próximo horário disponível" leva direto à primeira vaga. Remarcar e
 cancelar ficam na primeira tela, no mesmo aparelho.
 
+## Horários e adicionais
+
+- A agenda tem precisão de 5 minutos (`grid`). A duração de cada serviço é
+  qualquer múltiplo de 5, e no painel o barbeiro escolhe a duração de cada
+  horário, ajusta depois, e ao concluir antes do previsto o tempo que sobrou
+  volta a ficar livre.
+- Ao cliente são oferecidos os inícios que não deixam buraco na agenda
+  (encostados no atendimento anterior ou no seguinte). `clientSlots: 'all'`
+  mostra todos os inícios de 5 em 5 minutos.
+- Na confirmação, o cliente pode somar serviços marcados com `extra: true`.
+  Só aparecem os que cabem no tempo livre depois do horário escolhido;
+  duração e valor se atualizam, e partes que formam um combo (`bundle`)
+  cobram o preço do combo.
+
 ## Privacidade (LGPD)
 
 - Pede primeiro nome e celular. O celular serve para a confirmação no

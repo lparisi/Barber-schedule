@@ -8,7 +8,7 @@
   address: 'Rod. Francisco Magno Vieira, 4397 · Campeche, Florianópolis - SC',
   phone: '(48) 99839-0862',
   accent: { light: '#1F5F4A', dark: '#5FD0A8' },
-  grid: 15,              // intervalo da grade de horários, em minutos
+  grid: 5,               // precisão da agenda, em minutos
   // Celular do cliente: 'required' (recebe a confirmação no WhatsApp),
   // 'optional' ou 'off'.
   askPhone: 'required',
@@ -30,18 +30,21 @@
     { id: 'pro2', name: 'Caio Martins', role: 'Barbeiro', services: null, off: [1] },
     { id: 'pro3', name: 'Miguel Duarte', role: 'Barbeiro', services: ['corte', 'barba', 'corte-barba', 'maquina', 'sobrancelha'], off: [3] }
   ],
+  // `min` aceita qualquer múltiplo de 5. `extra: true` = oferecido como
+  // adicional na confirmação. `kind` evita oferecer dois serviços do mesmo tipo.
+  // `bundle` = combo: quem soma as partes paga o preço e o tempo do combo.
   services: [
     { id: 'corte', name: 'Corte', price: 60, min: 30, group: 'Cabelo e barba' },
-    { id: 'barba', name: 'Barba Simples', price: 40, min: 30, group: 'Cabelo e barba' },
-    { id: 'barboterapia', name: 'Barboterapia', price: 60, min: 30, group: 'Cabelo e barba' },
-    { id: 'corte-barba', name: 'Cabelo + Barba Simples', price: 90, min: 60, group: 'Cabelo e barba' },
-    { id: 'corte-barboterapia', name: 'Cabelo + Barboterapia', price: 120, min: 60, group: 'Cabelo e barba' },
+    { id: 'barba', name: 'Barba Simples', price: 40, min: 30, extra: true, kind: 'barba', group: 'Cabelo e barba' },
+    { id: 'barboterapia', name: 'Barboterapia', price: 60, min: 30, extra: true, kind: 'barba', group: 'Cabelo e barba' },
+    { id: 'corte-barba', name: 'Cabelo + Barba Simples', price: 90, min: 60, bundle: ['corte', 'barba'], group: 'Cabelo e barba' },
+    { id: 'corte-barboterapia', name: 'Cabelo + Barboterapia', price: 120, min: 60, bundle: ['corte', 'barboterapia'], group: 'Cabelo e barba' },
     { id: 'maquina', name: 'Máquina', price: 40, min: 15, group: 'Cabelo e barba' },
-    { id: 'sobrancelha', name: 'Sobrancelha', price: 10, min: 15, group: 'Cuidados' },
-    { id: 'limpeza', name: 'Limpeza de Pele', price: 120, min: 30, group: 'Cuidados' },
-    { id: 'cera-nariz', name: 'Cera Nariz', price: 30, min: 15, group: 'Cuidados' },
-    { id: 'cera-orelha', name: 'Cera Orelha', price: 30, min: 15, group: 'Cuidados' },
-    { id: 'cera-nariz-orelha', name: 'Cera Nariz + Orelha', price: 45, min: 15, group: 'Cuidados' },
+    { id: 'sobrancelha', name: 'Sobrancelha', price: 10, min: 15, extra: true, group: 'Cuidados' },
+    { id: 'limpeza', name: 'Limpeza de Pele', price: 120, min: 30, extra: true, group: 'Cuidados' },
+    { id: 'cera-nariz', name: 'Cera Nariz', price: 30, min: 15, extra: true, kind: 'nariz', group: 'Cuidados' },
+    { id: 'cera-orelha', name: 'Cera Orelha', price: 30, min: 15, extra: true, kind: 'orelha', group: 'Cuidados' },
+    { id: 'cera-nariz-orelha', name: 'Cera Nariz + Orelha', price: 45, min: 15, bundle: ['cera-nariz', 'cera-orelha'], group: 'Cuidados' },
     { id: 'ass-corte', name: 'Corte Assinatura', plan: true, min: 15, group: 'Assinantes' },
     { id: 'ass-barba', name: 'Barba Assinatura', plan: true, min: 15, group: 'Assinantes' },
     { id: 'ass-corte-barba', name: 'Cabelo + Barba Assinatura', plan: true, min: 30, group: 'Assinantes' }

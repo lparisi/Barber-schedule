@@ -6,7 +6,7 @@
   address: 'Rua das Flores, 100 · Centro',
   phone: '(11) 90000-0000',
   accent: { light: '#3F3CC8', dark: '#9C9AFF' },
-  grid: 15,
+  grid: 5,
   // Celular do cliente: 'required' (recebe a confirmação no WhatsApp),
   // 'optional' ou 'off'.
   askPhone: 'required',
@@ -26,10 +26,10 @@
   ],
   services: [
     { id: 'corte', name: 'Corte', price: 55, min: 30, group: 'Cabelo e barba' },
-    { id: 'barba', name: 'Barba', price: 40, min: 30, group: 'Cabelo e barba' },
-    { id: 'corte-barba', name: 'Corte + Barba', price: 85, min: 60, group: 'Cabelo e barba' },
+    { id: 'barba', name: 'Barba', price: 40, min: 30, extra: true, group: 'Cabelo e barba' },
+    { id: 'corte-barba', name: 'Corte + Barba', price: 85, min: 60, bundle: ['corte', 'barba'], group: 'Cabelo e barba' },
     { id: 'maquina', name: 'Corte na máquina', price: 35, min: 15, group: 'Cabelo e barba' },
-    { id: 'sobrancelha', name: 'Sobrancelha', price: 15, min: 15, group: 'Cuidados' },
-    { id: 'hidratacao', name: 'Hidratação', price: 50, min: 30, group: 'Cuidados' }
+    { id: 'sobrancelha', name: 'Sobrancelha', price: 15, min: 15, extra: true, group: 'Cuidados' },
+    { id: 'hidratacao', name: 'Hidratação', price: 50, min: 30, extra: true, group: 'Cuidados' }
   ]
 });

@@ -278,3 +278,8 @@ button.row:active, a.row:active { background: var(--fill); }
 
 .group.wide { width: 100%; text-align: left; }
 .bubble { background: var(--surface); border-radius: 18px 18px 18px 6px; padding: 12px 14px; font-size: 16px; box-shadow: var(--shadow); overflow-wrap: anywhere; }
+
+.tick { width: 26px; height: 26px; border-radius: 50%; flex: none; border: 1.5px solid var(--label3); display: grid; place-items: center; color: var(--on-accent); }
+.tick.on { background: var(--accent); border-color: var(--accent); }
+.tick svg { width: 18px; height: 18px; }
+.sheet .group > h2 { font: 400 13px var(--font); text-align: left; }
