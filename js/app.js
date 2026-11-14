@@ -270,12 +270,20 @@
       var row = function (e, on) {
         var other = B.total(s.id, on ? S.extras.filter(function (id) { return id !== e.id; }) : S.extras.concat(e.id));
         var dm = Math.abs(other.min - cur.min), dp = Math.abs(other.price - cur.price);
-        if (!on && !B.fits(p, S.date, x.t, other.min)) return '';
-        return '<button type="button" class="row" data-a="extra" data-id="' + e.id + '" aria-pressed="' + on + '"><span class="tick' + (on ? ' on' : '') + '">' + (on ? I.check : '') +
-          '</span><span class="main"><b>' + esc(e.name) + '</b><small>+ ' + B.fmtDur(dm) + '</small></span><span class="val">+ ' + B.money(dp) + '</span></button>';
+        // Não cabe depois do horário escolhido: em vez de esconder a oferta,
+        // procura o horário mais próximo do mesmo dia em que o total cabe.
+        var mv = null, can = function (q) { return S.extras.concat(e.id).every(function (id) { return !q.services || q.services.indexOf(id) >= 0; }); };
+        if (!on && !(can(p) && B.fits(p, S.date, x.t, other.min))) {
+          var alt = B.anySlots(pros().filter(can), S.date, other.min);
+          if (!alt.length) return '';
+          mv = alt.reduce(function (best, o) { return Math.abs(o.t - x.t) < Math.abs(best.t - x.t) ? o : best; });
+        }
+        return '<button type="button" class="row" data-a="extra" data-id="' + e.id + '"' + (mv ? ' data-t="' + mv.t + '" data-pro="' + mv.proId + '"' : '') + ' aria-pressed="' + on + '"><span class="tick' + (on ? ' on' : '') + '">' + (on ? I.check : '') +
+          '</span><span class="main"><b>' + esc(e.name) + '</b><small>+ ' + B.fmtDur(dm) + (mv ? ' · passa para ' + B.fmtMin(mv.t) + (mv.proId !== x.proId ? ' com ' + esc(first(B.pro(mv.proId).name)) : '') : '') +
+          '</small></span><span class="val">+ ' + B.money(dp) + '</span></button>';
       };
       ex = S.extras.map(function (id) { return row(B.service(id), true); }).join('') +
-        B.extrasFor(s.id, S.extras, p).map(function (e) { return row(e, false); }).join('');
+        B.extrasFor(s.id, S.extras, S.proId === 'any' ? null : p).map(function (e) { return row(e, false); }).join('');
       if (ex) ex = '<section class="group"><h2>Quer aproveitar e adicionar?</h2><div class="list">' + ex + '</div></section>';
     }
     return sheet(S.resched ? 'Confirmar novo horário' : 'Confirmar', '<div class="list">' + kv('Quando', B.fmtDay(S.date, true) + ', ' + B.fmtMin(x.t) + '–' + B.fmtMin(x.t + cur.min)) +
@@ -369,7 +377,10 @@
       if (S.view === 'home') { resetFlow(); if (location.hash) history.replaceState(null, '', location.pathname + location.search); }
     },
     closeSheet: function () { if (S.sheet && S.sheet.type === 'confirm' && !S.resched) S.extras = []; S.sheet = null; },
-    extra: function (d) { var i = S.extras.indexOf(d.id); if (i >= 0) S.extras.splice(i, 1); else S.extras.push(d.id); },
+    extra: function (d) {
+      if (d.t) { S.sheet.t = +d.t; S.sheet.proId = d.pro; }
+      var i = S.extras.indexOf(d.id); if (i >= 0) S.extras.splice(i, 1); else S.extras.push(d.id);
+    },
     quick: function () { resetFlow(); S.quick = true; S.proId = 'any'; go('service'); },
     privacy: function () { S.sheet = { type: 'privacy' }; },
     askForget: function () { S.sheet.sure = true; },

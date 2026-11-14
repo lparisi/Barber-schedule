@@ -31,7 +31,8 @@ cancelar ficam na primeira tela, no mesmo aparelho.
   (encostados no atendimento anterior ou no seguinte). `clientSlots: 'all'`
   mostra todos os inícios de 5 em 5 minutos.
 - Na confirmação, o cliente pode somar serviços marcados com `extra: true`.
-  Só aparecem os que cabem no tempo livre depois do horário escolhido;
+  Se o adicional não cabe depois do horário escolhido, a oferta mostra o
+  horário mais próximo do dia em que o total cabe e muda para ele ao tocar;
   duração e valor se atualizam, e partes que formam um combo (`bundle`)
   cobram o preço do combo.
 
