@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Agenda da Barbearia</title>
+<style>
+/* Layout: uma coluna estreita, como um app nativo. Listas agrupadas sobre fundo
+   cinza, título grande, uma ação principal por tela, folhas que sobem de baixo. */
+:root {
+  --bg: #F2F2F7;
+  --surface: #FFFFFF;
+  --raised: #FFFFFF;
+  --fill: rgba(118, 118, 128, 0.12);
+  --label: #0B0B0F;
+  --label2: #62626B;
+  --label3: #9A9AA3;
+  --sep: rgba(60, 60, 67, 0.16);
+  --accent: #1F5F4A;
+  --on-accent: #FFFFFF;
+  --tint: color-mix(in srgb, var(--accent) 12%, transparent);
+  --red: #C9001A;
+  --green: #1E7F38;
+  --orange: #A84A00;
+  --scrim: rgba(0, 0, 0, 0.38);
+  --bar: rgba(242, 242, 247, 0.82);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --r: 14px;
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #000000; --surface: #1C1C1E; --raised: #2C2C2E; --fill: rgba(118, 118, 128, 0.26);
+    --label: #FFFFFF; --label2: #A4A4AD; --label3: #6E6E78; --sep: rgba(110, 110, 120, 0.42);
+    --on-accent: #06110D; --red: #FF5A50; --green: #34D05C; --orange: #FFA22B;
+    --scrim: rgba(0, 0, 0, 0.6); --bar: rgba(0, 0, 0, 0.78); --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #000000; --surface: #1C1C1E; --raised: #2C2C2E; --fill: rgba(118, 118, 128, 0.26);
+  --label: #FFFFFF; --label2: #A4A4AD; --label3: #6E6E78; --sep: rgba(110, 110, 120, 0.42);
+  --on-accent: #06110D; --red: #FF5A50; --green: #34D05C; --orange: #FFA22B;
+  --scrim: rgba(0, 0, 0, 0.6); --bar: rgba(0, 0, 0, 0.78); --shadow: none; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--label);
+  font: 17px/1.35 var(--font); -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button, input, select { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; text-align: inherit; }
+a { color: var(--accent); text-decoration: none; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; border-radius: 8px; }
+[hidden] { display: none !important; }
+
+.page {
+  max-width: 520px; margin: 0 auto; min-height: 100%;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 120px;
+  display: flex; flex-direction: column; gap: 22px;
+}
+.page.wide { max-width: 680px; }
+
+/* ---------- barra de navegação ---------- */
+.nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  margin: 0 -16px; padding: 6px 8px; min-height: 48px;
+  display: flex; align-items: center; gap: 4px;
+  background: var(--bar); backdrop-filter: saturate(180%) blur(18px); -webkit-backdrop-filter: saturate(180%) blur(18px);
+}
+.nav .back { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0 10px 0 4px; color: var(--accent); }
+.nav .sp { flex: 1; }
+.nav .txt { min-height: 44px; padding: 0 10px; color: var(--accent); }
+.icon { width: 22px; height: 22px; flex: none; }
+
+.title { font: 700 32px/1.12 var(--display); letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+.sub { color: var(--label2); margin: 6px 0 0; font-size: 16px; }
+.head { display: flex; flex-direction: column; }
+
+/* ---------- cabeçalho da marca ---------- */
+.brand { display: flex; align-items: center; gap: 14px; padding-top: 22px; }
+.logo {
+  width: 56px; height: 56px; border-radius: 16px; flex: none; display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent); font: 700 20px var(--display); letter-spacing: 0.02em;
+}
+.brand h1 { font: 700 24px/1.15 var(--display); letter-spacing: -0.02em; margin: 0; }
+.brand p { margin: 3px 0 0; font-size: 15px; color: var(--label2); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-right: 6px; }
+.dot.off { background: var(--label3); }
+
+/* ---------- listas agrupadas ---------- */
+.group { display: flex; flex-direction: column; gap: 7px; }
+.group > h2 { font: 400 13px var(--font); letter-spacing: 0.04em; text-transform: uppercase; color: var(--label2); margin: 0 16px; }
+.group > .foot { font-size: 13px; color: var(--label2); margin: 0 16px; }
+.list { background: var(--surface); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow); }
+.row {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 10px 14px 10px 16px;
+  position: relative;
+}
+.row + .row::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: 1px; background: var(--sep); }
+.row.has-av + .row.has-av::before { left: 68px; }
+button.row:active, a.row:active { background: var(--fill); }
+.row .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.row .main b { font-weight: 500; overflow-wrap: anywhere; }
+.row .main small { font-size: 14px; color: var(--label2); }
+.row .val { color: var(--label2); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.row .chev { color: var(--label3); width: 16px; height: 16px; flex: none; }
+.row.plain { min-height: 44px; }
+.row .k { color: var(--label2); flex: none; }
+.row .v { flex: 1; text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.av {
+  width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: var(--tint); color: var(--accent); font: 600 15px var(--font);
+}
+.av.any { background: var(--accent); color: var(--on-accent); }
+
+/* ---------- controle segmentado ---------- */
+.seg { display: flex; background: var(--fill); border-radius: 10px; padding: 2px; gap: 2px; }
+.seg button { flex: 1; min-height: 34px; border-radius: 8px; text-align: center; font-size: 15px; font-weight: 500; padding: 0 8px; }
+.seg button[aria-pressed="true"] { background: var(--raised); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14); font-weight: 600; }
+
+/* ---------- cartões de destaque ---------- */
+.card { background: var(--surface); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow); }
+.card .eyebrow { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.02em; }
+.card h3 { margin: 0; font: 600 20px/1.2 var(--display); letter-spacing: -0.01em; }
+.card p { margin: 0; color: var(--label2); font-size: 15px; }
+.card .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.card.now { flex-direction: row; align-items: center; }
+.card.now .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 50px; padding: 0 20px; border-radius: 14px; width: 100%;
+  background: var(--accent); color: var(--on-accent); font-weight: 600; text-align: center;
+}
+.btn:active { opacity: 0.8; }
+.btn.tinted { background: var(--tint); color: var(--accent); }
+.btn.gray { background: var(--fill); color: var(--label); }
+.btn.danger { background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--red); }
+.btn.sm { min-height: 36px; padding: 0 14px; border-radius: 18px; width: auto; font-size: 15px; }
+
+/* ---------- dias e horários ---------- */
+.days { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 6px; scrollbar-width: none; scroll-snap-type: x proximity; }
+.days::-webkit-scrollbar { display: none; }
+.day {
+  flex: none; width: 60px; min-height: 72px; border-radius: 14px; background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; scroll-snap-align: start;
+}
+.day small { font-size: 12px; color: var(--label2); text-transform: capitalize; }
+.day b { font: 600 20px var(--display); font-variant-numeric: tabular-nums; }
+.day[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.day[aria-pressed="true"] small { color: inherit; opacity: 0.85; }
+.day:disabled { opacity: 0.38; cursor: default; }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; }
+.slot {
+  min-height: 46px; border-radius: 12px; background: var(--surface); text-align: center;
+  font-weight: 500; font-variant-numeric: tabular-nums; box-shadow: var(--shadow);
+}
+.slot:active, .slot[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.empty { text-align: center; color: var(--label2); padding: 28px 16px; font-size: 16px; }
+
+/* ---------- folhas ---------- */
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 20; display: flex; align-items: flex-end; justify-content: center; animation: fade 0.2s ease-out; }
+.sheet {
+  width: 100%; max-width: 520px; max-height: 92%; overflow-y: auto; background: var(--bg);
+  border-radius: 18px 18px 0 0; display: flex; flex-direction: column; gap: 16px;
+  padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  animation: rise 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.sheet .grab { width: 36px; height: 5px; border-radius: 3px; background: var(--label3); opacity: 0.5; margin: 0 auto 2px; flex: none; }
+.sheet .sh { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sheet h2 { font: 700 22px/1.2 var(--display); letter-spacing: -0.01em; margin: 0; }
+.sheet .x { width: 32px; height: 32px; border-radius: 50%; background: var(--fill); display: grid; place-items: center; color: var(--label2); flex: none; }
+@keyframes rise { from { transform: translateY(100%); } }
+@keyframes fade { from { opacity: 0; } }
+@media (min-width: 600px) {
+  .scrim { align-items: center; }
+  .sheet { border-radius: 18px; padding-bottom: 20px; }
+}
+
+.field { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 16px; position: relative; }
+.field + .field::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: 1px; background: var(--sep); }
+.field label { width: 84px; flex: none; color: var(--label); font-size: 16px; }
+.field input, .field select {
+  flex: 1; min-width: 0; height: 52px; border: 0; background: transparent; outline: none; font-size: 17px;
+  appearance: none; -webkit-appearance: none;
+}
+.field input::placeholder { color: var(--label3); }
+.err { color: var(--red); font-size: 14px; margin: -8px 16px 0; min-height: 0; }
+.err:empty { display: none; }
+.note { font-size: 13px; color: var(--label2); margin: -6px 16px 0; }
+
+/* ---------- confirmação ---------- */
+.done { align-items: center; text-align: center; padding-top: 56px; }
+.check { width: 76px; height: 76px; border-radius: 50%; background: var(--green); color: #fff; display: grid; place-items: center; animation: pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.check svg { width: 40px; height: 40px; }
+@keyframes pop { from { transform: scale(0.4); opacity: 0; } }
+.done .list { width: 100%; text-align: left; }
+.stack { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+
+/* ---------- painel da equipe ---------- */
+.chips { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; min-height: 40px; padding: 0 14px 0 6px; border-radius: 20px; background: var(--surface); display: inline-flex; align-items: center; gap: 8px; font-weight: 500; font-size: 15px; }
+.chip .av { width: 28px; height: 28px; font-size: 12px; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.chip[aria-pressed="true"] .av { background: color-mix(in srgb, var(--on-accent) 22%, transparent); color: inherit; }
+.datebar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.datebar b { font: 600 18px var(--display); text-align: center; flex: 1; }
+.round { width: 44px; height: 44px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; color: var(--accent); flex: none; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--surface); border-radius: var(--r); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat b { font: 700 22px var(--display); font-variant-numeric: tabular-nums; }
+.stat small { font-size: 13px; color: var(--label2); }
+.row .time { width: 50px; flex: none; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 16px; display: flex; flex-direction: column; }
+.row .time small { font-weight: 400; font-size: 13px; color: var(--label2); }
+.row.free { min-height: 44px; color: var(--label2); }
+.row.free .time { font-weight: 400; color: var(--label3); }
+.row.free .plus { color: var(--accent); font-size: 15px; font-weight: 500; }
+.row.faded .main, .row.faded .time { opacity: 0.5; }
+.row.faded .main b { text-decoration: line-through; }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 8px; background: var(--fill); color: var(--label2); white-space: nowrap; }
+.tag.walk { background: color-mix(in srgb, var(--orange) 16%, transparent); color: var(--orange); }
+.tag.ok { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+.tag.bad { background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red); }
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; justify-content: center;
+  background: var(--bar); backdrop-filter: saturate(180%) blur(18px); -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-top: 1px solid var(--sep);
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.dock > div { display: flex; gap: 10px; width: 100%; max-width: 648px; }
+.pin { display: flex; gap: 14px; justify-content: center; }
+.pin i { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--label2); }
+.pin i.on { background: var(--label); border-color: var(--label); }
+.keys { display: grid; grid-template-columns: repeat(3, 76px); gap: 14px 22px; justify-content: center; }
+.keys button { width: 76px; height: 76px; border-radius: 50%; background: var(--surface); font: 400 30px var(--display); text-align: center; }
+.keys button:active { background: var(--fill); }
+.keys .ghost { background: none; font-size: 16px; color: var(--label2); }
+.center { align-items: center; text-align: center; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30;
+  background: var(--label); color: var(--bg); padding: 12px 18px; border-radius: 22px; font-size: 15px; font-weight: 500;
+  max-width: calc(100% - 32px); text-align: center; animation: fade 0.2s;
+}
+.linkbtn { color: var(--accent); min-height: 44px; font-size: 15px; align-self: center; padding: 0 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+.noanim, .noanim .sheet { animation: none; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// Marca: Dom Pinho Barbearia. Serviços, preços, endereço e horários copiados do
+// sistema atual (suaagenda.net) em nov/2026. Para trocar de barbearia, basta
+// criar outro arquivo como este: nada no código do app muda.
+(window.TENANTS = window.TENANTS || []).push({
+  id: 'dom-pinho',
+  name: 'Dom Pinho Barbearia',
+  city: 'Campeche, Florianópolis',
+  address: 'Rod. Francisco Magno Vieira, 4397 · Campeche, Florianópolis - SC',
+  phone: '(48) 99839-0862',
+  accent: { light: '#1F5F4A', dark: '#5FD0A8' },
+  grid: 15,              // intervalo da grade de horários, em minutos
+  pin: '1234',           // PIN do painel da equipe (demonstração)
+  // 0 = domingo ... 6 = sábado. Cada dia: lista de períodos [início, fim].
+  hours: {
+    1: [['10:00', '12:00'], ['13:00', '18:00']],
+    2: [['09:00', '12:00'], ['13:00', '19:00']],
+    3: [['09:00', '12:00'], ['13:00', '19:00']],
+    4: [['09:00', '12:00'], ['13:00', '19:00']],
+    5: [['09:00', '12:00'], ['13:00', '19:30']],
+    6: [['09:00', '12:00'], ['13:00', '17:00']]
+  },
+  // Cada profissional tem agenda própria. `services: null` = faz todos.
+  // `off` = dias da semana de folga. `hours` (opcional) substitui o da casa.
+  pros: [
+    { id: 'rauha', name: 'Rauhã Pinho', role: 'Barbeiro', services: null, off: [] },
+    // Os dois abaixo são EXEMPLOS para demonstrar agendas separadas.
+    { id: 'pro2', name: 'Caio Martins', role: 'Barbeiro', services: null, off: [1] },
+    { id: 'pro3', name: 'Miguel Duarte', role: 'Barbeiro', services: ['corte', 'barba', 'corte-barba', 'maquina', 'sobrancelha'], off: [3] }
+  ],
+  services: [
+    { id: 'corte', name: 'Corte', price: 60, min: 30, group: 'Cabelo e barba' },
+    { id: 'barba', name: 'Barba Simples', price: 40, min: 30, group: 'Cabelo e barba' },
+    { id: 'barboterapia', name: 'Barboterapia', price: 60, min: 30, group: 'Cabelo e barba' },
+    { id: 'corte-barba', name: 'Cabelo + Barba Simples', price: 90, min: 60, group: 'Cabelo e barba' },
+    { id: 'corte-barboterapia', name: 'Cabelo + Barboterapia', price: 120, min: 60, group: 'Cabelo e barba' },
+    { id: 'maquina', name: 'Máquina', price: 40, min: 15, group: 'Cabelo e barba' },
+    { id: 'sobrancelha', name: 'Sobrancelha', price: 10, min: 15, group: 'Cuidados' },
+    { id: 'limpeza', name: 'Limpeza de Pele', price: 120, min: 30, group: 'Cuidados' },
+    { id: 'cera-nariz', name: 'Cera Nariz', price: 30, min: 15, group: 'Cuidados' },
+    { id: 'cera-orelha', name: 'Cera Orelha', price: 30, min: 15, group: 'Cuidados' },
+    { id: 'cera-nariz-orelha', name: 'Cera Nariz + Orelha', price: 45, min: 15, group: 'Cuidados' },
+    { id: 'ass-corte', name: 'Corte Assinatura', plan: true, min: 15, group: 'Assinantes' },
+    { id: 'ass-barba', name: 'Barba Assinatura', plan: true, min: 15, group: 'Assinantes' },
+    { id: 'ass-corte-barba', name: 'Cabelo + Barba Assinatura', plan: true, min: 30, group: 'Assinantes' }
+  ]
+});
+
+// Marca neutra de demonstração: prova que o mesmo app serve a qualquer salão.
+(window.TENANTS = window.TENANTS || []).push({
+  id: 'modelo',
+  name: 'Barbearia Modelo',
+  city: 'Centro',
+  address: 'Rua das Flores, 100 · Centro',
+  phone: '(11) 90000-0000',
+  accent: { light: '#3F3CC8', dark: '#9C9AFF' },
+  grid: 15,
+  pin: '1234',
+  hours: {
+    1: [['09:00', '12:00'], ['13:00', '19:00']],
+    2: [['09:00', '12:00'], ['13:00', '19:00']],
+    3: [['09:00', '12:00'], ['13:00', '19:00']],
+    4: [['09:00', '12:00'], ['13:00', '19:00']],
+    5: [['09:00', '12:00'], ['13:00', '20:00']],
+    6: [['09:00', '17:00']]
+  },
+  pros: [
+    { id: 'p1', name: 'André Lima', role: 'Barbeiro', services: null, off: [] },
+    { id: 'p2', name: 'Bruno Reis', role: 'Barbeiro', services: null, off: [1] },
+    { id: 'p3', name: 'Diego Faria', role: 'Barbeiro', services: ['corte', 'barba', 'corte-barba', 'maquina'], off: [3] }
+  ],
+  services: [
+    { id: 'corte', name: 'Corte', price: 55, min: 30, group: 'Cabelo e barba' },
+    { id: 'barba', name: 'Barba', price: 40, min: 30, group: 'Cabelo e barba' },
+    { id: 'corte-barba', name: 'Corte + Barba', price: 85, min: 60, group: 'Cabelo e barba' },
+    { id: 'maquina', name: 'Corte na máquina', price: 35, min: 15, group: 'Cabelo e barba' },
+    { id: 'sobrancelha', name: 'Sobrancelha', price: 15, min: 15, group: 'Cuidados' },
+    { id: 'hidratacao', name: 'Hidratação', price: 50, min: 30, group: 'Cuidados' }
+  ]
+});
+
+/* Regras de negócio e armazenamento. A interface (app.js) só fala com este
+   arquivo, então trocar o localStorage por uma API real fica concentrado aqui. */
+(function () {
+  'use strict';
+  var B = (window.Barber = {});
+  var mem = {};
+
+  B.load = function (k, d) {
+    if (k in mem) return mem[k];
+    try { var v = localStorage.getItem(k); if (v != null) return (mem[k] = JSON.parse(v)); } catch (e) {}
+    return d;
+  };
+  B.save = function (k, v) {
+    mem[k] = v;
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+  };
+
+  /* ---------- datas ---------- */
+  var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
+  B.dateKey = function (d) { return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); };
+  B.parseKey = function (k) { var a = k.split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); };
+  B.addDays = function (k, n) { var d = B.parseKey(k); d.setDate(d.getDate() + n); return B.dateKey(d); };
+  B.today = function () { return B.dateKey(new Date()); };
+  B.nowMin = function () { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+  B.toMin = function (s) { var a = s.split(':'); return +a[0] * 60 + +a[1]; };
+  B.fmtMin = function (m) { return p2(Math.floor(m / 60)) + ':' + p2(m % 60); };
+  B.fmtDur = function (m) { return m < 60 ? m + ' min' : (m % 60 ? Math.floor(m / 60) + 'h' + p2(m % 60) : m / 60 + ' h'); };
+  B.fmtDay = function (k, long) {
+    var t = B.today();
+    var s = B.parseKey(k).toLocaleDateString('pt-BR', long
+      ? { weekday: 'long', day: 'numeric', month: 'long' }
+      : { weekday: 'short', day: 'numeric', month: 'short' });
+    if (k === t) return long ? 'Hoje, ' + s : 'Hoje';
+    if (k === B.addDays(t, 1)) return long ? 'Amanhã, ' + s : 'Amanhã';
+    return s;
+  };
+  B.digits = function (s) { return String(s || '').replace(/\D/g, ''); };
+  B.maskPhone = function (s) {
+    var d = B.digits(s).slice(0, 11);
+    if (d.length <= 2) return d.length ? '(' + d : '';
+    if (d.length <= 6) return '(' + d.slice(0, 2) + ') ' + d.slice(2);
+    if (d.length <= 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
+    return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+  };
+  B.money = function (v) { return 'R$ ' + (v % 1 ? v.toFixed(2).replace('.', ',') : v); };
+  B.priceLabel = function (s) { return !s ? 'A combinar' : s.plan ? 'No plano' : B.money(s.price); };
+
+  /* ---------- marca (white label) ---------- */
+  B.tenants = window.TENANTS || [];
+  B.setTenant = function (id) {
+    B.tenant = B.tenants.filter(function (t) { return t.id === id; })[0] || B.tenants[0];
+    B.save('bs:tenant', B.tenant.id);
+    appts = null;
+    seed();
+  };
+  B.pro = function (id) { return B.tenant.pros.filter(function (p) { return p.id === id; })[0]; };
+  B.service = function (id) { return B.tenant.services.filter(function (s) { return s.id === id; })[0]; };
+  B.prosFor = function (serviceId) {
+    return B.tenant.pros.filter(function (p) { return !serviceId || !p.services || p.services.indexOf(serviceId) >= 0; });
+  };
+  B.servicesOf = function (pro) {
+    return B.tenant.services.filter(function (s) { return !pro || !pro.services || pro.services.indexOf(s.id) >= 0; });
+  };
+
+  /* ---------- agenda ---------- */
+  var appts = null;
+  var key = function () { return 'bs:' + B.tenant.id + ':appts'; };
+  B.appts = function () { return appts || (appts = B.load(key(), [])); };
+  B.commit = function () { B.save(key(), appts); };
+  B.find = function (id) { return B.appts().filter(function (a) { return a.id === id; })[0]; };
+  var holds = function (a) { return a.status === 'booked' || a.status === 'done'; };
+
+  // Períodos de trabalho de um profissional num dia: [[início, fim], ...] em minutos.
+  B.periods = function (pro, k) {
+    var wd = B.parseKey(k).getDay();
+    if ((pro.off || []).indexOf(wd) >= 0) return [];
+    var h = (pro.hours || B.tenant.hours)[wd] || [];
+    return h.map(function (r) { return [B.toMin(r[0]), B.toMin(r[1])]; });
+  };
+  B.dayOf = function (proId, k) {
+    return B.appts().filter(function (a) { return a.proId === proId && a.date === k; })
+      .sort(function (a, b) { return a.start - b.start; });
+  };
+  B.isFree = function (proId, k, start, dur, ignoreId) {
+    return !B.dayOf(proId, k).some(function (a) {
+      return holds(a) && a.id !== ignoreId && start < a.start + a.dur && a.start < start + dur;
+    });
+  };
+  // Horários de início livres de um profissional para uma duração.
+  B.slots = function (pro, k, dur) {
+    var g = B.tenant.grid, out = [], t0 = B.today();
+    if (k < t0) return out;
+    var min = k === t0 ? Math.ceil(B.nowMin() / g) * g : 0;
+    B.periods(pro, k).forEach(function (r) {
+      for (var t = r[0]; t + dur <= r[1]; t += g) if (t >= min && B.isFree(pro.id, k, t, dur)) out.push(t);
+    });
+    return out;
+  };
+  // "Primeiro disponível": une as agendas e, em cada horário, escolhe quem
+  // está com o dia mais leve, para distribuir os clientes entre a equipe.
+  B.anySlots = function (pros, k, dur) {
+    var map = {};
+    pros.forEach(function (p) {
+      var load = B.dayOf(p.id, k).filter(holds).length;
+      B.slots(p, k, dur).forEach(function (t) {
+        if (!map[t] || load < map[t].load) map[t] = { t: t, proId: p.id, load: load };
+      });
+    });
+    return Object.keys(map).map(function (t) { return map[t]; }).sort(function (a, b) { return a.t - b.t; });
+  };
+  B.nextFree = function (pros, dur, days) {
+    var k = B.today();
+    for (var i = 0; i < (days || 14); i++, k = B.addDays(k, 1)) {
+      var s = B.anySlots(pros, k, dur);
+      if (s.length) return { date: k, t: s[0].t, proId: s[0].proId };
+    }
+    return null;
+  };
+  var uid = function () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); };
+  // Grava um horário. Devolve null se alguém ocupou a vaga nesse meio-tempo.
+  B.book = function (a) {
+    if (!B.isFree(a.proId, a.date, a.start, a.dur)) return null;
+    a.id = uid(); a.status = 'booked'; a.createdAt = Date.now();
+    B.appts().push(a); B.commit();
+    return a;
+  };
+  B.setStatus = function (id, status) { var a = B.find(id); if (a) { a.status = status; B.commit(); } };
+  B.upcomingFor = function (phone) {
+    var d = B.digits(phone), t = B.today(), n = B.nowMin();
+    if (!d) return [];
+    return B.appts().filter(function (a) {
+      return a.status === 'booked' && a.kind !== 'block' && B.digits(a.phone) === d &&
+        (a.date > t || (a.date === t && a.start + a.dur > n));
+    }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.start - b.start; });
+  };
+
+  /* ---------- dados de exemplo (só para a demonstração) ---------- */
+  var NAMES = ['Bruno S.', 'Thiago R.', 'Lucas M.', 'Rafael C.', 'Pedro A.', 'João V.', 'Mateus F.', 'Gustavo L.', 'Felipe N.', 'Vítor P.', 'Daniel O.', 'Henrique B.'];
+  function seed() {
+    if (B.load(key(), null)) return;
+    var x = 7; var rnd = function () { x = (x * 16807) % 2147483647; return x / 2147483647; };
+    var list = [], k = B.today(), now = B.nowMin();
+    for (var d = 0; d < 7; d++, k = B.addDays(k, 1)) {
+      B.tenant.pros.forEach(function (p) {
+        var svcs = B.servicesOf(p).filter(function (s) { return !s.plan; });
+        B.periods(p, k).forEach(function (r) {
+          var t = r[0];
+          while (t < r[1]) {
+            var s = svcs[Math.floor(rnd() * svcs.length)];
+            if (rnd() < 0.42 - d * 0.04 && t + s.min <= r[1]) {
+              var past = d === 0 && t + s.min <= now;
+              list.push({
+                id: 'seed' + list.length, proId: p.id, serviceId: s.id, date: k, start: t, dur: s.min,
+                name: NAMES[Math.floor(rnd() * NAMES.length)], phone: '', demo: true,
+                kind: rnd() < 0.2 && d === 0 ? 'walkin' : 'booking', status: past ? 'done' : 'booked'
+              });
+              t += s.min;
+            } else t += 30;
+          }
+        });
+      });
+    }
+    appts = list; B.commit();
+  }
+  B.resetDemo = function () { appts = null; mem[key()] = null; try { localStorage.removeItem(key()); } catch (e) {} delete mem[key()]; seed(); };
+
+  B.setTenant(B.load('bs:tenant', (B.tenants[0] || {}).id));
+})();
+
+/* Interface: site do cliente e painel da equipe. Tudo é desenhado a partir do
+   estado S; cada toque chama uma ação em `act`, que muda o estado e redesenha. */
+(function () {
+  'use strict';
+  var B = window.Barber, $app = document.getElementById('app');
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var me = B.load('bs:me', { name: '', phone: '' });
+  var S = {
+    view: 'home', stack: [], tab: 'service',
+    serviceId: undefined, proId: undefined, date: null, walkin: false, resched: null,
+    sheet: null, form: {}, last: null,
+    staff: { ok: false, pin: '', pro: B.tenant.pros[0].id, date: B.today() }
+  };
+
+  var I = {
+    chev: '<svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>',
+    back: '<svg class="icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l-7 7 7 7"/></svg>',
+    fwd: '<svg class="icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4l7 7-7 7"/></svg>',
+    check: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 21l7 7 13-15"/></svg>',
+    x: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg>'
+  };
+
+  /* ---------- utilidades ---------- */
+  var initials = function (n) {
+    var w = n.trim().split(/\s+/);
+    return ((w[0] || '')[0] + (w.length > 1 ? w[w.length - 1][0] : '')).toUpperCase();
+  };
+  var first = function (n) { return n.trim().split(/\s+/)[0]; };
+  var svc = function () { return S.serviceId && S.serviceId !== 'none' ? B.service(S.serviceId) : null; };
+  var dur = function () { var s = svc(); return s ? s.min : 30; };
+  var pros = function () {
+    return S.proId && S.proId !== 'any' ? [B.pro(S.proId)] : B.prosFor(svc() ? svc().id : null);
+  };
+  var when = function (date, t) { return B.fmtDay(date) + ' às ' + B.fmtMin(t); };
+  var svcName = function (a) { var s = a.serviceId && B.service(a.serviceId); return s ? s.name : 'Serviço a decidir na hora'; };
+  var wa = function (phone, text) { return 'https://wa.me/55' + B.digits(phone) + '?text=' + encodeURIComponent(text); };
+  var kv = function (k, v) { return '<div class="row plain"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; };
+  var openNow = function () {
+    var n = B.nowMin();
+    return (B.tenant.hours[new Date().getDay()] || []).some(function (r) { return n >= B.toMin(r[0]) && n < B.toMin(r[1]); });
+  };
+  function toast(msg) {
+    var old = document.querySelector('.toast'); if (old) old.remove();
+    var el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 2800);
+  }
+  function applyBrand() {
+    var a = B.tenant.accent, el = document.getElementById('brand-style');
+    if (!el) { el = document.createElement('style'); el.id = 'brand-style'; document.head.appendChild(el); }
+    el.textContent = ':root{--accent:' + a.light + '}' +
+      '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--accent:' + a.dark + '}}' +
+      ':root[data-theme="dark"]{--accent:' + a.dark + '}';
+    if (!window.__keepTitle) document.title = B.tenant.name;
+  }
+  function resetFlow() { S.serviceId = S.proId = undefined; S.walkin = false; S.resched = null; S.date = null; }
+  function go(v) { S.stack.push(S.view); S.view = v; }
+  function toTime() {
+    var k = B.today(), ps = pros(); S.date = k;
+    for (var i = 0; i < 14; i++, k = B.addDays(k, 1)) if (B.anySlots(ps, k, dur()).length) { S.date = k; break; }
+    go('time');
+  }
+
+  /* ---------- pedaços reutilizados ---------- */
+  function serviceList(list, withNone) {
+    var groups = [], by = {};
+    list.forEach(function (s) { if (!by[s.group]) groups.push(by[s.group] = { name: s.group, items: [] }); by[s.group].items.push(s); });
+    var html = groups.map(function (g) {
+      return '<section class="group"><h2>' + esc(g.name) + '</h2><div class="list">' + g.items.map(function (s) {
+        return '<button class="row" data-a="pickService" data-id="' + s.id + '"><span class="main"><b>' + esc(s.name) +
+          '</b><small>' + B.fmtDur(s.min) + '</small></span><span class="val">' + B.priceLabel(s) + '</span>' + I.chev + '</button>';
+      }).join('') + '</div></section>';
+    }).join('');
+    if (withNone) html += '<section class="group"><div class="list"><button class="row" data-a="pickService" data-id="none">' +
+      '<span class="main"><b>Decido na hora</b><small>Reserva 30 min com o profissional</small></span>' + I.chev + '</button></div></section>';
+    return html;
+  }
+  function proList(list, withAny) {
+    var d = dur(), rows = '';
+    if (withAny && list.length > 1) {
+      var nf = B.nextFree(list, d);
+      rows += '<button class="row has-av" data-a="pickPro" data-id="any"><span class="av any">★</span><span class="main"><b>Primeiro disponível</b><small>' +
+        (nf ? 'Próxima vaga: ' + when(nf.date, nf.t) : 'Sem vagas nos próximos dias') + '</small></span>' + I.chev + '</button>';
+    }
+    rows += list.map(function (p) {
+      var nf = B.nextFree([p], d);
+      return '<button class="row has-av" data-a="pickPro" data-id="' + p.id + '"><span class="av">' + initials(p.name) +
+        '</span><span class="main"><b>' + esc(p.name) + '</b><small>' + (nf ? 'Próxima vaga: ' + when(nf.date, nf.t) : 'Sem vagas nos próximos dias') +
+        '</small></span>' + I.chev + '</button>';
+    }).join('');
+    return '<div class="list">' + rows + '</div>';
+  }
+  function nav(label, right) {
+    return '<nav class="nav"><button class="back" data-a="back">' + I.back + esc(label || 'Voltar') + '</button><span class="sp"></span>' + (right || '') + '</nav>';
+  }
+  function sheet(title, body) {
+    return '<div class="scrim' + (lastSheet === S.sheet.type ? ' noanim' : '') + '"><div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(title) +
+      '"><div class="grab"></div><div class="sh"><h2>' + esc(title) + '</h2><button class="x" data-a="closeSheet" aria-label="Fechar">' + I.x + '</button></div>' + body + '</div></div>';
+  }
+
+  /* ---------- telas do cliente ---------- */
+  var V = {};
+
+  V.home = function () {
+    var t = B.tenant, open = openNow();
+    var h = '<div class="page"><header class="brand"><div class="logo">' + initials(t.name.replace(/barbearia/i, '') || t.name) + '</div><div><h1>' + esc(t.name) +
+      '</h1><p><span class="dot' + (open ? '' : ' off') + '"></span>' + (open ? 'Aberto agora' : 'Fechado agora') + ' · ' + esc(t.city) + '</p></div></header>';
+
+    B.upcomingFor(me.phone).slice(0, 2).forEach(function (a) {
+      h += '<section class="card"><span class="eyebrow">SEU HORÁRIO</span><h3>' + when(a.date, a.start) + '</h3><p>' + esc(svcName(a)) + ' · com ' +
+        esc(B.pro(a.proId).name) + '</p><div class="acts"><button class="btn sm tinted" data-a="resched" data-id="' + a.id +
+        '">Remarcar</button><button class="btn sm danger" data-a="askCancel" data-id="' + a.id + '">Cancelar</button></div></section>';
+    });
+
+    var nf = B.anySlots(t.pros, B.today(), 30)[0];
+    if (nf) h += '<section class="card now"><div class="main"><span class="eyebrow">SEM HORA MARCADA?</span><h3>Próxima vaga hoje às ' + B.fmtMin(nf.t) +
+      '</h3><p>Garanta antes de sair de casa.</p></div><button class="btn sm" data-a="walkin">Quero ir hoje</button></section>';
+
+    h += '<section class="group"><h2>Agendar por</h2><div class="seg" role="group" aria-label="Agendar por">' +
+      '<button data-a="tab" data-t="service" aria-pressed="' + (S.tab === 'service') + '">Serviço</button>' +
+      '<button data-a="tab" data-t="pro" aria-pressed="' + (S.tab === 'pro') + '">Profissional</button></div></section>';
+    h += S.tab === 'service' ? serviceList(t.services) : '<section class="group">' + proList(t.pros, false) + '</section>';
+
+    var days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'], wd = new Date().getDay();
+    h += '<section class="group"><h2>A barbearia</h2><div class="list">' + kv('Endereço', esc(t.address)) +
+      '<a class="row plain" href="' + wa(t.phone, 'Olá!') + '" target="_blank" rel="noopener"><span class="k">WhatsApp</span><span class="v">' + esc(t.phone) + '</span></a></div></section>';
+    h += '<section class="group"><h2>Horários</h2><div class="list">' + [1, 2, 3, 4, 5, 6, 0].map(function (d) {
+      var r = t.hours[d];
+      return '<div class="row plain"><span class="k"' + (d === wd ? ' style="color:var(--label);font-weight:600"' : '') + '>' + days[d] + '</span><span class="v val">' +
+        (r ? r.map(function (p) { return p[0] + '–' + p[1]; }).join(' · ') : 'Fechado') + '</span></div>';
+    }).join('') + '</div></section>';
+    return h + '<button class="linkbtn" data-a="staff">Sou da equipe</button></div>';
+  };
+
+  V.service = function () {
+    var p = S.proId && S.proId !== 'any' ? B.pro(S.proId) : null;
+    return '<div class="page">' + nav() + '<header class="head"><h1 class="title">Qual serviço?</h1><p class="sub">' +
+      (S.walkin ? 'Para hoje, na próxima vaga' : p ? 'Com ' + esc(p.name) : '') + '</p></header>' +
+      serviceList(B.servicesOf(p), true) + '</div>';
+  };
+
+  V.pro = function () {
+    var s = svc();
+    return '<div class="page">' + nav() + '<header class="head"><h1 class="title">Com quem?</h1><p class="sub">' +
+      (s ? esc(s.name) + ' · ' + B.fmtDur(s.min) + ' · ' + B.priceLabel(s) : '') + '</p></header><section class="group">' +
+      proList(B.prosFor(s ? s.id : null), true) + '</section></div>';
+  };
+
+  V.time = function () {
+    var s = svc(), ps = pros(), d = dur(), k = B.today();
+    var who = S.proId && S.proId !== 'any' ? 'com ' + esc(B.pro(S.proId).name) : 'primeiro disponível';
+    var h = '<div class="page">' + nav() + '<header class="head"><h1 class="title">' + (S.resched ? 'Novo horário' : 'Quando?') + '</h1><p class="sub">' +
+      esc(s ? s.name : 'Serviço a decidir') + ' · ' + B.fmtDur(d) + ' · ' + who + '</p></header><div class="days">';
+    for (var i = 0; i < 14; i++, k = B.addDays(k, 1)) {
+      var dt = B.parseKey(k), n = B.anySlots(ps, k, d).length;
+      h += '<button class="day" data-a="pickDay" data-k="' + k + '" aria-pressed="' + (k === S.date) + '"' + (n ? '' : ' disabled') +
+        ' aria-label="' + B.fmtDay(k, true) + '"><small>' + (i === 0 ? 'hoje' : dt.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')) +
+        '</small><b>' + dt.getDate() + '</b></button>';
+    }
+    h += '</div>';
+    var slots = B.anySlots(ps, S.date, d);
+    if (!slots.length) h += '<p class="empty">Sem horários livres neste dia.<br>Escolha outro dia acima.</p>';
+    [['Manhã', 0, 720], ['Tarde', 720, 1080], ['Noite', 1080, 1440]].forEach(function (g) {
+      var part = slots.filter(function (x) { return x.t >= g[1] && x.t < g[2]; });
+      if (part.length) h += '<section class="group"><h2>' + g[0] + '</h2><div class="slots">' + part.map(function (x) {
+        return '<button class="slot" data-a="pickTime" data-t="' + x.t + '" data-pro="' + x.proId + '">' + B.fmtMin(x.t) + '</button>';
+      }).join('') + '</div></section>';
+    });
+    return h + '</div>';
+  };
+
+  V.done = function () {
+    var a = S.last, p = B.pro(a.proId), s = a.serviceId && B.service(a.serviceId);
+    var msg = 'Olá! Agendei pelo site: ' + svcName(a) + ' com ' + p.name + ', ' + B.fmtDay(a.date, true) + ' às ' + B.fmtMin(a.start) + '. ' + a.name;
+    return '<div class="page done"><div class="check">' + I.check + '</div><header class="head"><h1 class="title">Horário confirmado</h1><p class="sub">Até lá, ' +
+      esc(first(a.name)) + '.</p></header><div class="list">' + kv('Quando', B.fmtDay(a.date, true) + ' às ' + B.fmtMin(a.start)) + kv('Serviço', esc(svcName(a))) +
+      kv('Profissional', esc(p.name)) + kv('Valor', B.priceLabel(s)) + kv('Onde', esc(B.tenant.address)) + '</div><div class="stack">' +
+      '<a class="btn tinted" href="' + wa(B.tenant.phone, msg) + '" target="_blank" rel="noopener">Avisar a barbearia no WhatsApp</a>' +
+      '<button class="btn gray" data-a="home">Voltar ao início</button></div>' +
+      '<p class="sub">Para remarcar ou cancelar, é só abrir o site de novo neste aparelho.</p></div>';
+  };
+
+  /* ---------- painel da equipe ---------- */
+  V.pin = function () {
+    var dots = ''; for (var i = 0; i < 4; i++) dots += '<i class="' + (i < S.staff.pin.length ? 'on' : '') + '"></i>';
+    var keys = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (n) { return '<button data-a="key" data-n="' + n + '">' + n + '</button>'; }).join('') +
+      '<span></span><button data-a="key" data-n="0">0</button><button class="ghost" data-a="key" data-n="del" aria-label="Apagar">Apagar</button>';
+    return '<div class="page center">' + nav('Site') + '<header class="head"><h1 class="title">Painel da equipe</h1><p class="sub">Digite o PIN de 4 dígitos</p></header>' +
+      '<div class="pin" aria-label="' + S.staff.pin.length + ' de 4 dígitos">' + dots + '</div><div class="keys">' + keys +
+      '</div><p class="sub">PIN desta demonstração: ' + esc(B.tenant.pin) + '</p></div>';
+  };
+
+  function timeline(pro, k) {
+    var g = B.tenant.grid, items = B.dayOf(pro.id, k).filter(function (a) { return a.status !== 'cancelled'; });
+    var rows = items.map(function (a) { return { t: a.start, a: a }; }), t0 = B.today();
+    if (k >= t0) {
+      var min = k === t0 ? Math.ceil(B.nowMin() / g) * g : 0;
+      B.periods(pro, k).forEach(function (r) {
+        var cur = Math.max(r[0], min);
+        items.filter(function (a) { return (a.status === 'booked' || a.status === 'done') && a.start + a.dur > cur && a.start < r[1]; })
+          .forEach(function (a) { if (a.start - cur >= g) rows.push({ t: cur, end: a.start }); cur = Math.max(cur, a.start + a.dur); });
+        if (r[1] - cur >= g) rows.push({ t: cur, end: r[1] });
+      });
+    }
+    return rows.sort(function (a, b) { return a.t - b.t; });
+  }
+
+  V.staff = function () {
+    var st = S.staff, pro = B.pro(st.pro), rows = timeline(pro, st.date);
+    var appts = rows.filter(function (r) { return r.a && r.a.kind !== 'block' && r.a.status !== 'noshow'; }).map(function (r) { return r.a; });
+    var total = appts.reduce(function (n, a) { var s = a.serviceId && B.service(a.serviceId); return n + (s && s.price || 0); }, 0);
+    var h = '<div class="page wide">' + nav('Site', '<button class="txt" data-a="settings">Ajustes</button>') +
+      '<header class="head"><h1 class="title">Agenda</h1></header><div class="chips" role="group" aria-label="Profissional">' +
+      B.tenant.pros.map(function (p) {
+        return '<button class="chip" data-a="staffPro" data-id="' + p.id + '" aria-pressed="' + (p.id === st.pro) + '"><span class="av">' + initials(p.name) + '</span>' + esc(first(p.name)) + '</button>';
+      }).join('') + '</div><div class="datebar"><button class="round" data-a="staffDay" data-n="-1" aria-label="Dia anterior">' + I.back +
+      '</button><b>' + B.fmtDay(st.date, true) + '</b><button class="round" data-a="staffDay" data-n="1" aria-label="Próximo dia">' + I.fwd + '</button></div>' +
+      '<div class="stats"><div class="stat"><b>' + appts.length + '</b><small>Atendimentos</small></div><div class="stat"><b>' +
+      appts.filter(function (a) { return a.kind === 'walkin'; }).length + '</b><small>Encaixes</small></div><div class="stat"><b>' + B.money(total) + '</b><small>Previsto</small></div></div>';
+    if (!rows.length) h += '<p class="empty">' + (B.periods(pro, st.date).length ? 'Nenhum horário neste dia.' : esc(first(pro.name)) + ' não atende neste dia.') + '</p>';
+    else h += '<div class="list">' + rows.map(function (r) {
+      if (!r.a) return '<button class="row free" data-a="newAt" data-t="' + r.t + '"><span class="time">' + B.fmtMin(r.t) + '</span><span class="main">Livre até ' +
+        B.fmtMin(r.end) + '</span><span class="plus">Agendar</span></button>';
+      var a = r.a, tag = a.status === 'done' ? '<span class="tag ok">Concluído</span>' : a.status === 'noshow' ? '<span class="tag bad">Faltou</span>' :
+        a.kind === 'walkin' ? '<span class="tag walk">Encaixe</span>' : a.kind === 'block' ? '' : '<span class="tag">Marcado</span>';
+      return '<button class="row' + (a.status === 'noshow' ? ' faded' : '') + '" data-a="openAppt" data-id="' + a.id + '"><span class="time">' + B.fmtMin(a.start) +
+        '<small>' + B.fmtMin(a.start + a.dur) + '</small></span><span class="main"><b>' + esc(a.kind === 'block' ? 'Bloqueado' : a.name) + '</b><small>' +
+        esc(a.kind === 'block' ? (a.note || 'Sem atendimento') : svcName(a)) + (a.demo ? ' · exemplo' : '') + '</small></span>' + tag + I.chev + '</button>';
+    }).join('') + '</div>';
+    return h + '</div><div class="dock"><div><button class="btn" data-a="newWalkin">Encaixe agora</button><button class="btn gray" data-a="newBlock">Bloquear</button></div></div>';
+  };
+
+  /* ---------- folhas ---------- */
+  var SH = {}, lastSheet = null;
+
+  SH.confirm = function () {
+    var x = S.sheet, s = svc(), p = B.pro(x.proId);
+    return sheet(S.resched ? 'Confirmar novo horário' : 'Confirmar', '<div class="list">' + kv('Quando', B.fmtDay(S.date, true) + ' às ' + B.fmtMin(x.t)) +
+      kv('Serviço', esc(s ? s.name : 'A decidir na hora')) + kv('Profissional', esc(p.name)) + kv('Valor', B.priceLabel(s)) + '</div>' +
+      '<form class="stack" data-form="confirm" novalidate><div class="list"><div class="field"><label for="f-name">Nome</label><input id="f-name" data-f="name" autocomplete="name" autocapitalize="words" placeholder="Seu nome" value="' +
+      esc(S.form.name) + '"></div><div class="field"><label for="f-phone">Celular</label><input id="f-phone" data-f="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="(48) 90000-0000" value="' +
+      esc(S.form.phone) + '"></div></div><p class="err" role="alert"></p><p class="note">Sem cadastro e sem senha. O celular só identifica o seu horário.</p>' +
+      '<button class="btn" type="submit">Confirmar agendamento</button></form>');
+  };
+
+  SH.cancel = function () {
+    var a = B.find(S.sheet.id);
+    return sheet('Cancelar horário?', '<div class="list">' + kv('Quando', when(a.date, a.start)) + kv('Serviço', esc(svcName(a))) + kv('Profissional', esc(B.pro(a.proId).name)) +
+      '</div><div class="stack"><button class="btn danger" data-a="doCancel" data-id="' + a.id + '">Cancelar horário</button><button class="btn gray" data-a="closeSheet">Manter</button></div>');
+  };
+
+  function staffSlots() {
+    var f = S.form, pro = B.pro(S.staff.pro), s = B.service(f.serviceId);
+    if (f.mode === 'walkin') return B.slots(pro, B.today(), s.min);
+    return B.slots(pro, S.staff.date, f.mode === 'block' ? B.tenant.grid : s.min);
+  }
+  SH.novo = function () {
+    var f = S.form, pro = B.pro(S.staff.pro), opts = staffSlots(), block = f.mode === 'block';
+    if (opts.indexOf(+f.start) < 0) f.start = opts[0];
+    var seg = '<div class="seg">' + [['walkin', 'Encaixe agora'], ['book', 'Marcar'], ['block', 'Bloquear']].map(function (m) {
+      return '<button data-a="mode" data-m="' + m[0] + '" aria-pressed="' + (f.mode === m[0]) + '">' + m[1] + '</button>';
+    }).join('') + '</div>';
+    var fields = '';
+    if (!block) fields += '<div class="field"><label for="s-name">Cliente</label><input id="s-name" data-f="name" autocapitalize="words" placeholder="' +
+      (f.mode === 'walkin' ? 'Nome (opcional)' : 'Nome') + '" value="' + esc(f.name) + '"></div><div class="field"><label for="s-phone">Celular</label><input id="s-phone" data-f="phone" type="tel" inputmode="tel" placeholder="Opcional" value="' +
+      esc(f.phone) + '"></div><div class="field"><label for="s-svc">Serviço</label><select id="s-svc" data-f="serviceId" data-r="1">' + B.servicesOf(pro).map(function (s) {
+        return '<option value="' + s.id + '"' + (s.id === f.serviceId ? ' selected' : '') + '>' + esc(s.name) + ' · ' + B.fmtDur(s.min) + '</option>';
+      }).join('') + '</select></div>';
+    else fields += '<div class="field"><label for="s-note">Motivo</label><input id="s-note" data-f="note" placeholder="Almoço, folga… (opcional)" value="' + esc(f.note) + '"></div>';
+    if (f.mode === 'walkin') fields += '<div class="field"><label>Início</label><span class="val">' + (opts.length ? 'Hoje às ' + B.fmtMin(opts[0]) + ' (primeira vaga)' : 'Sem vaga hoje') + '</span></div>';
+    else fields += '<div class="field"><label for="s-start">Início</label><select id="s-start" data-f="start">' + (opts.length ? opts.map(function (t) {
+      return '<option value="' + t + '"' + (t === +f.start ? ' selected' : '') + '>' + B.fmtMin(t) + '</option>';
+    }).join('') : '<option value="">Sem vaga neste dia</option>') + '</select></div>';
+    if (block) fields += '<div class="field"><label for="s-dur">Duração</label><select id="s-dur" data-f="dur">' + [15, 30, 45, 60, 90, 120, 180, 240].map(function (m) {
+      return '<option value="' + m + '"' + (m === +f.dur ? ' selected' : '') + '>' + B.fmtDur(m) + '</option>';
+    }).join('') + '</select></div>';
+    return sheet('Agenda de ' + first(pro.name), seg + '<form class="stack" data-form="novo" novalidate><div class="list">' + fields +
+      '</div><p class="err" role="alert"></p><button class="btn" type="submit">' + (block ? 'Bloquear horário' : f.mode === 'walkin' ? 'Colocar na agenda' : 'Marcar horário') + '</button></form>');
+  };
+
+  SH.appt = function () {
+    var a = B.find(S.sheet.id), s = a.serviceId && B.service(a.serviceId), block = a.kind === 'block';
+    var rows = kv('Horário', B.fmtMin(a.start) + '–' + B.fmtMin(a.start + a.dur));
+    if (!block) rows += kv('Serviço', esc(svcName(a))) + kv('Valor', B.priceLabel(s)) + kv('Origem', a.kind === 'walkin' ? 'Encaixe' : 'Agendado') + (a.phone ? kv('Celular', esc(a.phone)) : '');
+    else if (a.note) rows += kv('Motivo', esc(a.note));
+    var btns = '';
+    if (block) btns = '<button class="btn danger" data-a="status" data-s="cancelled">Remover bloqueio</button>';
+    else if (a.status === 'booked') btns = '<button class="btn" data-a="status" data-s="done">Concluir atendimento</button>' +
+      (a.phone ? '<a class="btn tinted" target="_blank" rel="noopener" href="' + wa(a.phone, 'Olá, ' + first(a.name) + '! Aqui é da ' + B.tenant.name + '.') + '">Chamar no WhatsApp</a>' : '') +
+      '<button class="btn gray" data-a="status" data-s="noshow">Não compareceu</button><button class="btn danger" data-a="status" data-s="cancelled">Cancelar horário</button>';
+    else btns = '<button class="btn gray" data-a="status" data-s="booked">Reabrir</button>';
+    return sheet(block ? 'Bloqueado' : a.name, '<div class="list">' + rows + '</div><div class="stack">' + btns + '</div>');
+  };
+
+  SH.settings = function () {
+    var h = '';
+    if (B.tenants.length > 1) h += '<section class="group"><h2>Marca em exibição</h2><div class="list">' + B.tenants.map(function (t) {
+      return '<button class="row" data-a="tenant" data-id="' + t.id + '"><span class="main"><b>' + esc(t.name) + '</b></span>' +
+        (t.id === B.tenant.id ? '<span class="val" style="color:var(--accent)">Ativa</span>' : '') + '</button>';
+    }).join('') + '</div><p class="foot">O mesmo sistema, com nome, cores, equipe e serviços de cada barbearia.</p></section>';
+    return sheet('Ajustes', h + '<div class="stack"><button class="btn gray" data-a="reset">Restaurar dados de exemplo</button><button class="btn danger" data-a="logout">Sair do painel</button></div>');
+  };
+
+  /* ---------- ações ---------- */
+  var act = {
+    tab: function (d) { S.tab = d.t; },
+    home: function () { resetFlow(); S.stack = []; S.view = 'home'; },
+    back: function () {
+      S.view = S.stack.pop() || 'home';
+      if (S.view === 'home') { resetFlow(); if (location.hash) history.replaceState(null, '', location.pathname + location.search); }
+    },
+    closeSheet: function () { S.sheet = null; },
+    walkin: function () { resetFlow(); S.walkin = true; S.proId = 'any'; go('service'); },
+    pickService: function (d) {
+      S.serviceId = d.id;
+      if (S.walkin) {
+        var s = B.anySlots(pros(), B.today(), dur());
+        if (s.length) { S.date = B.today(); go('time'); return openConfirm(s[0].t, s[0].proId); }
+        S.walkin = false; toast('Hoje não há mais vaga para esse serviço. Veja os próximos dias.');
+        return toTime();
+      }
+      if (S.proId === undefined) {
+        var ps = B.prosFor(svc() ? svc().id : null);
+        if (ps.length === 1) { S.proId = ps[0].id; toTime(); } else go('pro');
+      } else toTime();
+    },
+    pickPro: function (d) { S.proId = d.id; if (S.serviceId === undefined) go('service'); else toTime(); },
+    pickDay: function (d) { S.date = d.k; },
+    pickTime: function (d) { openConfirm(+d.t, d.pro); },
+    resched: function (d) {
+      var a = B.find(d.id); resetFlow();
+      S.resched = a.id; S.serviceId = a.serviceId || 'none'; S.proId = a.proId; toTime();
+    },
+    askCancel: function (d) { S.sheet = { type: 'cancel', id: d.id }; },
+    doCancel: function (d) { B.setStatus(d.id, 'cancelled'); S.sheet = null; toast('Horário cancelado'); },
+
+    staff: function () { resetFlow(); S.stack = ['home']; S.view = S.staff.ok ? 'staff' : 'pin'; if (location.hash !== '#painel') history.replaceState(null, '', '#painel'); },
+    key: function (d) {
+      var st = S.staff;
+      if (d.n === 'del') st.pin = st.pin.slice(0, -1); else if (st.pin.length < 4) st.pin += d.n;
+      if (st.pin.length === 4) {
+        if (st.pin === B.tenant.pin) { st.ok = true; S.view = 'staff'; } else toast('PIN incorreto');
+        st.pin = '';
+      }
+    },
+    staffPro: function (d) { S.staff.pro = d.id; },
+    staffDay: function (d) { S.staff.date = B.addDays(S.staff.date, +d.n); },
+    settings: function () { S.sheet = { type: 'settings' }; },
+    tenant: function (d) { B.setTenant(d.id); applyBrand(); S.staff.pro = B.tenant.pros[0].id; S.sheet = null; toast('Marca: ' + B.tenant.name); },
+    reset: function () { B.resetDemo(); S.sheet = null; toast('Dados de exemplo restaurados'); },
+    logout: function () { S.staff.ok = false; S.sheet = null; act.home(); },
+    newWalkin: function () { openNovo('walkin'); },
+    newBlock: function () { openNovo('block'); },
+    newAt: function (d) { openNovo('book', +d.t); },
+    mode: function (d) { S.form.mode = d.m; },
+    openAppt: function (d) { S.sheet = { type: 'appt', id: d.id }; },
+    status: function (d) {
+      var a = B.find(S.sheet.id);
+      if (d.s === 'booked' && !B.isFree(a.proId, a.date, a.start, a.dur, a.id)) return toast('Esse horário já foi ocupado por outro cliente');
+      B.setStatus(a.id, d.s); S.sheet = null;
+      toast({ done: 'Atendimento concluído', noshow: 'Marcado como falta', cancelled: a.kind === 'block' ? 'Bloqueio removido' : 'Horário cancelado', booked: 'Horário reaberto' }[d.s]);
+    }
+  };
+  function openConfirm(t, proId) { S.form = { name: me.name, phone: me.phone }; S.sheet = { type: 'confirm', t: t, proId: proId }; }
+  function openNovo(mode, start) {
+    S.form = { mode: mode, name: '', phone: '', note: '', serviceId: B.servicesOf(B.pro(S.staff.pro))[0].id, start: start, dur: 60 };
+    S.sheet = { type: 'novo' };
+  }
+
+  var submit = {
+    confirm: function (err) {
+      var f = S.form, x = S.sheet, name = (f.name || '').trim(), n = B.digits(f.phone).length;
+      if (name.length < 2) return err('Digite o seu nome.');
+      if (n < 10 || n > 11) return err('Digite o celular com DDD, por exemplo (48) 99999-0000.');
+      var a = B.book({
+        proId: x.proId, serviceId: svc() ? svc().id : null, date: S.date, start: x.t, dur: dur(), name: name, phone: B.maskPhone(f.phone),
+        kind: S.walkin && S.date === B.today() ? 'walkin' : 'booking'
+      });
+      if (!a) { S.sheet = null; toast('Esse horário acabou de ser ocupado. Escolha outro.'); return true; }
+      if (S.resched) B.setStatus(S.resched, 'cancelled');
+      me = { name: name, phone: a.phone }; B.save('bs:me', me);
+      S.last = a; S.sheet = null; resetFlow(); S.stack = []; S.view = 'done';
+      return true;
+    },
+    novo: function (err) {
+      var f = S.form, st = S.staff, opts = staffSlots(), a;
+      if (f.mode === 'block') {
+        if (f.start == null || f.start === '') return err('Não há horário livre neste dia.');
+        if (!B.isFree(st.pro, st.date, +f.start, +f.dur)) return err('Já existe atendimento nesse período. Escolha uma duração menor.');
+        a = B.book({ proId: st.pro, serviceId: null, date: st.date, start: +f.start, dur: +f.dur, name: 'Bloqueado', phone: '', note: (f.note || '').trim(), kind: 'block' });
+      } else {
+        var s = B.service(f.serviceId), walk = f.mode === 'walkin', name = (f.name || '').trim();
+        if (!opts.length) return err(walk ? 'Sem vaga hoje para esse serviço na agenda de ' + first(B.pro(st.pro).name) + '.' : 'Não há horário livre neste dia para esse serviço.');
+        if (!walk && name.length < 2) return err('Digite o nome do cliente.');
+        a = B.book({
+          proId: st.pro, serviceId: s.id, date: walk ? B.today() : st.date, start: walk ? opts[0] : +f.start, dur: s.min,
+          name: name || 'Cliente sem hora marcada', phone: B.maskPhone(f.phone), kind: walk ? 'walkin' : 'booking'
+        });
+        if (a && walk) st.date = B.today();
+      }
+      if (!a) return err('Esse horário não está mais livre.');
+      S.sheet = null; toast(f.mode === 'block' ? 'Horário bloqueado' : 'Entrou na agenda às ' + B.fmtMin(a.start));
+      return true;
+    }
+  };
+
+  /* ---------- desenho e eventos ---------- */
+  var lastView = null;
+  function render() {
+    var h = V[S.view]();
+    if (S.sheet) h += SH[S.sheet.type]();
+    $app.innerHTML = h;
+    lastSheet = S.sheet ? S.sheet.type : null;
+    document.body.style.overflow = S.sheet ? 'hidden' : '';
+    if (S.view !== lastView) { window.scrollTo(0, 0); lastView = S.view; }
+    var sel = $app.querySelector('.day[aria-pressed="true"]');
+    if (sel) sel.parentNode.scrollLeft = sel.offsetLeft - sel.parentNode.clientWidth / 2 + sel.offsetWidth / 2;
+  }
+  $app.addEventListener('click', function (e) {
+    if (e.target.classList.contains('scrim')) { S.sheet = null; return render(); }
+    var el = e.target.closest('[data-a]');
+    if (!el || el.disabled) return;
+    act[el.dataset.a](el.dataset);
+    render();
+  });
+  $app.addEventListener('input', function (e) {
+    var f = e.target.dataset.f; if (!f) return;
+    if (e.target.type === 'tel') e.target.value = B.maskPhone(e.target.value);
+    S.form[f] = e.target.value;
+    var box = e.target.form && e.target.form.querySelector('.err'); if (box) box.textContent = '';
+    if (e.target.dataset.r) render();
+  });
+  $app.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var box = e.target.querySelector('.err');
+    var ok = submit[e.target.dataset.form](function (m) { box.textContent = m; });
+    if (ok) render();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && S.sheet) { S.sheet = null; render(); }
+    else if (S.view === 'pin' && /^\d$/.test(e.key)) { act.key({ n: e.key }); render(); }
+    else if (S.view === 'pin' && e.key === 'Backspace') { act.key({ n: 'del' }); render(); }
+  });
+  function route() { if (location.hash === '#painel' && S.view !== 'staff' && S.view !== 'pin') { act.staff(); render(); } }
+  window.addEventListener('hashchange', route);
+
+  applyBrand();
+  render();
+  route();
+})();
+</script>
+</body>
+</html>
