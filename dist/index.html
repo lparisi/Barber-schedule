@@ -283,6 +283,9 @@ button.row:active, a.row:active { background: var(--fill); }
 .ticket div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ticket small { font-size: 13px; color: var(--label2); }
 .ticket b { font: 700 26px var(--display); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
+
+.group.wide { width: 100%; text-align: left; }
+.bubble { background: var(--surface); border-radius: 18px 18px 18px 6px; padding: 12px 14px; font-size: 16px; box-shadow: var(--shadow); overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
@@ -299,7 +302,9 @@ button.row:active, a.row:active { background: var(--fill); }
   phone: '(48) 99839-0862',
   accent: { light: '#1F5F4A', dark: '#5FD0A8' },
   grid: 15,              // intervalo da grade de horários, em minutos
-  askPhone: 'optional', // celular do cliente: 'optional', 'required' ou 'off'
+  // Celular do cliente: 'required' (recebe a confirmação no WhatsApp),
+  // 'optional' ou 'off'.
+  askPhone: 'required',
   pin: '1234',           // PIN do painel da equipe (demonstração)
   // 0 = domingo ... 6 = sábado. Cada dia: lista de períodos [início, fim].
   hours: {
@@ -345,7 +350,9 @@ button.row:active, a.row:active { background: var(--fill); }
   phone: '(11) 90000-0000',
   accent: { light: '#3F3CC8', dark: '#9C9AFF' },
   grid: 15,
-  askPhone: 'optional', // celular do cliente: 'optional', 'required' ou 'off'
+  // Celular do cliente: 'required' (recebe a confirmação no WhatsApp),
+  // 'optional' ou 'off'.
+  askPhone: 'required',
   pin: '1234',
   hours: {
     1: [['09:00', '12:00'], ['13:00', '19:00']],
@@ -2826,6 +2833,14 @@ var qrcode = function() {
     for (var j = 0; j < 6; j++) out += ALPHA[r[j] % ALPHA.length];
     return out;
   }
+  // Texto da confirmação que vai para o WhatsApp do cliente. Fica aqui para o
+  // servidor de envio usar exatamente o mesmo texto que a tela mostra.
+  B.confirmText = function (a) {
+    var s = a.serviceId && B.service(a.serviceId);
+    return 'Olá, ' + (a.name || 'tudo bem') + '! Seu horário na ' + B.tenant.name + ' está confirmado: ' + (s ? s.name : 'atendimento') + ' com ' +
+      B.pro(a.proId).name + ', ' + B.fmtDay(a.date, true).replace(/^Hoje, |^Amanhã, /, '') + ' às ' + B.fmtMin(a.start) + '. Código: ' + B.fmtCode(a.code) +
+      '. Para remarcar ou cancelar, abra o site da barbearia' + (B.tenant.url ? ': ' + B.tenant.url : '.');
+  };
   B.fmtCode = function (c) { return c ? c.slice(0, 3) + '-' + c.slice(3) : ''; };
   // Horários futuros a partir das referências guardadas no aparelho do cliente.
   B.upcomingFor = function (ids) {
@@ -3062,14 +3077,14 @@ var qrcode = function() {
 
   V.done = function () {
     var a = S.last, p = B.pro(a.proId), s = a.serviceId && B.service(a.serviceId);
-    var msg = 'Olá! Agendei pelo site: ' + svcName(a) + ' com ' + p.name + ', ' + B.fmtDay(a.date, true) + ' às ' + B.fmtMin(a.start) + '. ' + a.name + ', código ' + B.fmtCode(a.code) + '.';
     return '<div class="page done"><div class="check">' + I.check + '</div><header class="head"><h1 class="title">Horário confirmado</h1><p class="sub">Até lá, ' +
       esc(a.name) + '.</p></header><div class="ticket">' + qr((B.tenant.url ? B.tenant.url + '#r-' : '') + a.code) + '<div><small>Código do horário</small><b>' + B.fmtCode(a.code) +
       '</b><small>Mostre na barbearia. É ele que identifica o seu horário, não os seus dados.</small></div></div><div class="list">' +
       kv('Quando', B.fmtDay(a.date, true) + ' às ' + B.fmtMin(a.start)) + kv('Serviço', esc(svcName(a))) +
       kv('Profissional', esc(p.name)) + kv('Valor', B.priceLabel(s)) + kv('Onde', esc(B.tenant.address)) + '</div><div class="stack">' +
-      '<a class="btn tinted" href="' + wa(B.tenant.phone, msg) + '" target="_blank" rel="noopener">Avisar a barbearia no WhatsApp</a>' +
       '<button class="btn gray" data-a="home">Voltar ao início</button></div>' +
+      (a.phone ? '<section class="group wide"><h2>Confirmação no WhatsApp · ' + esc(a.phone) + '</h2><div class="bubble">' + esc(B.confirmText(a)) +
+        '</div><p class="foot">Prévia: nesta demonstração a mensagem ainda não é enviada.</p></section>' : '') +
       '<p class="sub">Para remarcar ou cancelar, é só abrir o site de novo neste aparelho.</p></div>';
   };
 
@@ -3135,7 +3150,7 @@ var qrcode = function() {
       (phoneMode() === 'optional' ? 'Opcional' : '(48) 90000-0000') + '" value="' + esc(S.form.phone) + '"></div>') +
       '<label class="field toggle" for="f-rem"><span>Lembrar neste aparelho</span><input id="f-rem" class="switch" type="checkbox" role="switch" data-f="remember"' +
       (S.form.remember ? ' checked' : '') + '></label></div><p class="err" role="alert"></p><p class="note">Sem cadastro, senha ou cookies. ' +
-      (phoneMode() === 'optional' ? 'O celular é opcional: serve só para o barbeiro avisar se algo mudar. ' : '') + 'Tudo é apagado quando o atendimento termina.</p>' +
+      (phoneMode() === 'optional' ? 'O celular é opcional: serve para receber a confirmação no WhatsApp. ' : phoneMode() === 'required' ? 'A confirmação chega no seu WhatsApp. ' : '') + 'Tudo é apagado quando o atendimento termina.</p>' +
       '<button class="btn" type="submit"' + (validConfirm() ? '' : ' disabled') + '>Confirmar agendamento</button></form>', 'Cancelar');
   };
 
@@ -3182,7 +3197,7 @@ var qrcode = function() {
     var btns = '';
     if (block) btns = '<button class="btn danger" data-a="status" data-s="cancelled">Remover bloqueio</button>';
     else if (a.status === 'booked') btns = '<button class="btn" data-a="status" data-s="done">Concluir atendimento</button>' +
-      (a.phone ? '<a class="btn tinted" target="_blank" rel="noopener" href="' + wa(a.phone, 'Olá, ' + nm(a) + '! Aqui é da ' + B.tenant.name + '.') + '">Chamar no WhatsApp</a>' : '') +
+      (a.phone ? '<a class="btn tinted" target="_blank" rel="noopener" href="' + wa(a.phone, B.confirmText(a)) + '">Enviar confirmação no WhatsApp</a>' : '') +
       '<button class="btn gray" data-a="status" data-s="noshow">Não compareceu</button><button class="btn danger" data-a="status" data-s="cancelled">Cancelar horário</button>';
     else btns = '<button class="btn gray" data-a="status" data-s="booked">Reabrir</button>';
     return sheet(block ? 'Bloqueado' : nm(a), '<div class="list">' + rows + '</div><div class="stack">' + btns + '</div>');
@@ -3190,8 +3205,8 @@ var qrcode = function() {
 
   SH.privacy = function () {
     var ph = phoneMode() !== 'off';
-    return sheet('Privacidade', '<div class="card"><h3>O que pedimos</h3><p>Seu primeiro nome' + (ph ? ' e, se quiser, o celular' : '') + ', só na hora de confirmar. O nome é para o barbeiro saber quem vem' +
-      (ph ? '; o celular, para avisar se o horário mudar' : '') + '.</p>' +
+    return sheet('Privacidade', '<div class="card"><h3>O que pedimos</h3><p>Seu primeiro nome' + (ph ? ' e o celular' : '') + ', só na hora de confirmar. O nome é para o barbeiro saber quem vem' +
+      (ph ? '; o celular, para enviar a confirmação e avisos desse horário pelo WhatsApp. Nenhuma outra mensagem é enviada' : '') + '.</p>' +
       '<h3>Como o horário é identificado</h3><p>Por um código sorteado, que não é calculado a partir de nenhum dado seu. É ele que aparece no QR code.</p>' +
       '<h3>Por quanto tempo</h3><p>Só enquanto o horário está em aberto. Quando o atendimento termina, ou se você cancelar ou faltar, nome e celular são apagados na hora. Fica apenas o registro anônimo do serviço.</p>' +
       '<h3>O que não fazemos</h3><p>Sem login, sem cookies, sem rastreamento e sem propaganda. Não existe cadastro nem histórico de clientes.</p>' +

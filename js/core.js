@@ -156,6 +156,14 @@
     for (var j = 0; j < 6; j++) out += ALPHA[r[j] % ALPHA.length];
     return out;
   }
+  // Texto da confirmação que vai para o WhatsApp do cliente. Fica aqui para o
+  // servidor de envio usar exatamente o mesmo texto que a tela mostra.
+  B.confirmText = function (a) {
+    var s = a.serviceId && B.service(a.serviceId);
+    return 'Olá, ' + (a.name || 'tudo bem') + '! Seu horário na ' + B.tenant.name + ' está confirmado: ' + (s ? s.name : 'atendimento') + ' com ' +
+      B.pro(a.proId).name + ', ' + B.fmtDay(a.date, true).replace(/^Hoje, |^Amanhã, /, '') + ' às ' + B.fmtMin(a.start) + '. Código: ' + B.fmtCode(a.code) +
+      '. Para remarcar ou cancelar, abra o site da barbearia' + (B.tenant.url ? ': ' + B.tenant.url : '.');
+  };
   B.fmtCode = function (c) { return c ? c.slice(0, 3) + '-' + c.slice(3) : ''; };
   // Horários futuros a partir das referências guardadas no aparelho do cliente.
   B.upcomingFor = function (ids) {

@@ -23,9 +23,9 @@ cancelar ficam na primeira tela, no mesmo aparelho.
 
 ## Privacidade (LGPD)
 
-- Pede só o primeiro nome. O celular é configurável por barbearia
-  (`askPhone`: `optional`, `required` ou `off`). Sem login, cookies ou
-  rastreamento.
+- Pede primeiro nome e celular. O celular serve para a confirmação no
+  WhatsApp e é configurável por barbearia (`askPhone`: `required`, `optional`
+  ou `off`). Sem login, cookies ou rastreamento.
 - Cada horário recebe um código sorteado, mostrado também em QR code. Ele não
   é derivado de nenhum dado da pessoa (um hash de celular seria reversível).
 - Nome e celular existem só enquanto o horário está em aberto: são apagados na
@@ -50,6 +50,13 @@ sistema pede.
 Copie `tenants/modelo.js`, troque nome, cores, horários, equipe e serviços, e
 inclua o arquivo em `index.html`. `node build.mjs` gera o arquivo único;
 `node build.mjs --tenants=dom-pinho` gera só uma marca.
+
+## Confirmação no WhatsApp
+
+O texto da confirmação vem de `B.confirmText` em `js/core.js`. Nesta versão ele
+aparece como prévia para o cliente, e a equipe pode enviá-lo com um toque pelo
+painel (abre o WhatsApp da barbearia com a mensagem pronta). O envio automático
+depende de um servidor ligado à API oficial do WhatsApp Business.
 
 ## Limite desta versão
 

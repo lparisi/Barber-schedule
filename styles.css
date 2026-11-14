@@ -275,3 +275,6 @@ button.row:active, a.row:active { background: var(--fill); }
 .ticket div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ticket small { font-size: 13px; color: var(--label2); }
 .ticket b { font: 700 26px var(--display); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
+
+.group.wide { width: 100%; text-align: left; }
+.bubble { background: var(--surface); border-radius: 18px 18px 18px 6px; padding: 12px 14px; font-size: 16px; box-shadow: var(--shadow); overflow-wrap: anywhere; }
