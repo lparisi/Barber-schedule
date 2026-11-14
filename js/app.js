@@ -41,6 +41,15 @@
   var when = function (date, t) { return B.fmtDay(date) + ' às ' + B.fmtMin(t); };
   var svcName = function (a) { var s = a.serviceId && B.service(a.serviceId); return s ? s.name : 'Serviço a decidir na hora'; };
   var wa = function (phone, text) { return 'https://wa.me/55' + B.digits(phone) + '?text=' + encodeURIComponent(text); };
+  var nm = function (a) { return a.name || 'Cliente'; };
+  var phoneMode = function () { return B.tenant.askPhone || 'optional'; };
+  function qr(text) {
+    if (typeof qrcode !== 'function') return '';
+    var q = qrcode(0, 'M'); q.addData(text); q.make();
+    var n = q.getModuleCount(), d = '';
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) d += 'M' + (c + 2) + ' ' + (r + 2) + 'h1v1h-1z';
+    return '<svg class="qr" viewBox="0 0 ' + (n + 4) + ' ' + (n + 4) + '" role="img" aria-label="QR code do horário"><rect width="100%" height="100%" fill="#FFFFFF"/><path d="' + d + '" fill="#000000"/></svg>';
+  }
   var kv = function (k, v) { return '<div class="row plain"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; };
   var openNow = function () {
     var n = B.nowMin();
@@ -104,7 +113,11 @@
     return '<div class="scrim' + (lastSheet === S.sheet.type ? ' noanim' : '') + '"><div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(title) +
       '"><div class="grab"></div><div class="sh"><button class="txt" data-a="closeSheet">' + (close || 'Fechar') + '</button><h2>' + esc(title) + '</h2><span></span></div>' + body + '</div></div>';
   }
-  var validConfirm = function () { var n = B.digits(S.form.phone).length; return (S.form.name || '').trim().length >= 2 && (n === 10 || n === 11); };
+  var phoneOk = function () {
+    var n = B.digits(S.form.phone).length, m = phoneMode();
+    return m === 'off' || (n === 0 && m === 'optional') || n === 10 || n === 11;
+  };
+  var validConfirm = function () { return (S.form.name || '').trim().length >= 2 && phoneOk(); };
 
   /* ---------- telas do cliente ---------- */
   var V = {};
@@ -116,7 +129,7 @@
 
     B.upcomingFor(B.load(mineKey(), [])).slice(0, 2).forEach(function (a) {
       h += '<section class="card"><span class="eyebrow">SEU HORÁRIO</span><h3>' + when(a.date, a.start) + '</h3><p>' + esc(svcName(a)) + ' · com ' +
-        esc(B.pro(a.proId).name) + '</p><div class="acts"><button class="btn sm tinted" data-a="resched" data-id="' + a.id +
+        esc(B.pro(a.proId).name) + ' · código ' + B.fmtCode(a.code) + '</p><div class="acts"><button class="btn sm tinted" data-a="resched" data-id="' + a.id +
         '">Remarcar</button><button class="btn sm danger" data-a="askCancel" data-id="' + a.id + '">Cancelar</button></div></section>';
     });
 
@@ -179,9 +192,11 @@
 
   V.done = function () {
     var a = S.last, p = B.pro(a.proId), s = a.serviceId && B.service(a.serviceId);
-    var msg = 'Olá! Agendei pelo site: ' + svcName(a) + ' com ' + p.name + ', ' + B.fmtDay(a.date, true) + ' às ' + B.fmtMin(a.start) + '. ' + a.name;
+    var msg = 'Olá! Agendei pelo site: ' + svcName(a) + ' com ' + p.name + ', ' + B.fmtDay(a.date, true) + ' às ' + B.fmtMin(a.start) + '. ' + a.name + ', código ' + B.fmtCode(a.code) + '.';
     return '<div class="page done"><div class="check">' + I.check + '</div><header class="head"><h1 class="title">Horário confirmado</h1><p class="sub">Até lá, ' +
-      esc(first(a.name)) + '.</p></header><div class="list">' + kv('Quando', B.fmtDay(a.date, true) + ' às ' + B.fmtMin(a.start)) + kv('Serviço', esc(svcName(a))) +
+      esc(a.name) + '.</p></header><div class="ticket">' + qr((B.tenant.url ? B.tenant.url + '#r-' : '') + a.code) + '<div><small>Código do horário</small><b>' + B.fmtCode(a.code) +
+      '</b><small>Mostre na barbearia. É ele que identifica o seu horário, não os seus dados.</small></div></div><div class="list">' +
+      kv('Quando', B.fmtDay(a.date, true) + ' às ' + B.fmtMin(a.start)) + kv('Serviço', esc(svcName(a))) +
       kv('Profissional', esc(p.name)) + kv('Valor', B.priceLabel(s)) + kv('Onde', esc(B.tenant.address)) + '</div><div class="stack">' +
       '<a class="btn tinted" href="' + wa(B.tenant.phone, msg) + '" target="_blank" rel="noopener">Avisar a barbearia no WhatsApp</a>' +
       '<button class="btn gray" data-a="home">Voltar ao início</button></div>' +
@@ -232,7 +247,7 @@
       var a = r.a, tag = a.status === 'done' ? '<span class="tag ok">Concluído</span>' : a.status === 'noshow' ? '<span class="tag bad">Faltou</span>' :
         a.kind === 'walkin' ? '<span class="tag walk">Encaixe</span>' : a.kind === 'block' ? '' : '<span class="tag">Marcado</span>';
       return '<button class="row' + (a.status === 'noshow' ? ' faded' : '') + '" data-a="openAppt" data-id="' + a.id + '"><span class="time">' + B.fmtMin(a.start) +
-        '<small>' + B.fmtMin(a.start + a.dur) + '</small></span><span class="main"><b>' + esc(a.kind === 'block' ? 'Bloqueado' : a.name) + '</b><small>' +
+        '<small>' + B.fmtMin(a.start + a.dur) + '</small></span><span class="main"><b>' + esc(a.kind === 'block' ? 'Bloqueado' : nm(a)) + '</b><small>' +
         esc(a.kind === 'block' ? (a.note || 'Sem atendimento') : svcName(a)) + (a.demo ? ' · exemplo' : '') + '</small></span>' + tag + I.chev + '</button>';
     }).join('') + '</div>';
     return h + '</div><div class="dock"><div><button class="btn" data-a="newWalkin">Encaixe agora</button><button class="btn gray" data-a="newBlock">Bloquear</button></div></div>';
@@ -245,10 +260,12 @@
     var x = S.sheet, s = svc(), p = B.pro(x.proId);
     return sheet(S.resched ? 'Confirmar novo horário' : 'Confirmar', '<div class="list">' + kv('Quando', B.fmtDay(S.date, true) + ' às ' + B.fmtMin(x.t)) +
       kv('Serviço', esc(s ? s.name : 'A decidir na hora')) + kv('Profissional', esc(p.name)) + kv('Valor', B.priceLabel(s)) + '</div>' +
-      '<form class="stack" data-form="confirm" novalidate><div class="list"><div class="field"><label for="f-name">Nome</label><input id="f-name" data-f="name" autocomplete="name" autocapitalize="words" placeholder="Seu nome" value="' +
-      esc(S.form.name) + '"></div><div class="field"><label for="f-phone">Celular</label><input id="f-phone" data-f="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="(48) 90000-0000" value="' +
-      esc(S.form.phone) + '"></div><label class="field toggle" for="f-rem"><span>Lembrar neste aparelho</span><input id="f-rem" class="switch" type="checkbox" role="switch" data-f="remember"' +
-      (S.form.remember ? ' checked' : '') + '></label></div><p class="err" role="alert"></p><p class="note">Sem cadastro, senha ou cookies. Nome e celular servem só para o barbeiro saber quem vem e avisar se algo mudar.</p>' +
+      '<form class="stack" data-form="confirm" novalidate><div class="list"><div class="field"><label for="f-name">Nome</label><input id="f-name" data-f="name" autocomplete="given-name" autocapitalize="words" placeholder="Só o primeiro nome" value="' +
+      esc(S.form.name) + '"></div>' + (phoneMode() === 'off' ? '' : '<div class="field"><label for="f-phone">Celular</label><input id="f-phone" data-f="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="' +
+      (phoneMode() === 'optional' ? 'Opcional' : '(48) 90000-0000') + '" value="' + esc(S.form.phone) + '"></div>') +
+      '<label class="field toggle" for="f-rem"><span>Lembrar neste aparelho</span><input id="f-rem" class="switch" type="checkbox" role="switch" data-f="remember"' +
+      (S.form.remember ? ' checked' : '') + '></label></div><p class="err" role="alert"></p><p class="note">Sem cadastro, senha ou cookies. ' +
+      (phoneMode() === 'optional' ? 'O celular é opcional: serve só para o barbeiro avisar se algo mudar. ' : '') + 'Tudo é apagado quando o atendimento termina.</p>' +
       '<button class="btn" type="submit"' + (validConfirm() ? '' : ' disabled') + '>Confirmar agendamento</button></form>', 'Cancelar');
   };
 
@@ -290,22 +307,28 @@
   SH.appt = function () {
     var a = B.find(S.sheet.id), s = a.serviceId && B.service(a.serviceId), block = a.kind === 'block';
     var rows = kv('Horário', B.fmtMin(a.start) + '–' + B.fmtMin(a.start + a.dur));
-    if (!block) rows += kv('Serviço', esc(svcName(a))) + kv('Valor', B.priceLabel(s)) + kv('Origem', a.kind === 'walkin' ? 'Encaixe' : 'Agendado') + (a.phone ? kv('Celular', esc(a.phone)) : '');
+    if (!block) rows += kv('Serviço', esc(svcName(a))) + kv('Valor', B.priceLabel(s)) + kv('Origem', a.kind === 'walkin' ? 'Encaixe' : 'Agendado') + (a.phone ? kv('Celular', esc(a.phone)) : '') + (a.code ? kv('Código', B.fmtCode(a.code)) : '');
     else if (a.note) rows += kv('Motivo', esc(a.note));
     var btns = '';
     if (block) btns = '<button class="btn danger" data-a="status" data-s="cancelled">Remover bloqueio</button>';
     else if (a.status === 'booked') btns = '<button class="btn" data-a="status" data-s="done">Concluir atendimento</button>' +
-      (a.phone ? '<a class="btn tinted" target="_blank" rel="noopener" href="' + wa(a.phone, 'Olá, ' + first(a.name) + '! Aqui é da ' + B.tenant.name + '.') + '">Chamar no WhatsApp</a>' : '') +
+      (a.phone ? '<a class="btn tinted" target="_blank" rel="noopener" href="' + wa(a.phone, 'Olá, ' + nm(a) + '! Aqui é da ' + B.tenant.name + '.') + '">Chamar no WhatsApp</a>' : '') +
       '<button class="btn gray" data-a="status" data-s="noshow">Não compareceu</button><button class="btn danger" data-a="status" data-s="cancelled">Cancelar horário</button>';
     else btns = '<button class="btn gray" data-a="status" data-s="booked">Reabrir</button>';
-    return sheet(block ? 'Bloqueado' : a.name, '<div class="list">' + rows + '</div><div class="stack">' + btns + '</div>');
+    return sheet(block ? 'Bloqueado' : nm(a), '<div class="list">' + rows + '</div><div class="stack">' + btns + '</div>');
   };
 
   SH.privacy = function () {
-    return sheet('Privacidade', '<div class="card"><h3>O que pedimos</h3><p>Nome e celular, só na hora de confirmar. Servem para o barbeiro saber quem vem e avisar se o horário mudar.</p>' +
-      '<h3>O que não fazemos</h3><p>Sem login, sem cookies, sem rastreamento e sem propaganda. Seus dados não são vendidos nem repassados.</p>' +
-      '<h3>Neste aparelho</h3><p>Fica guardada só a referência do seu horário, para você remarcar ou cancelar. Nome e celular só ficam salvos se você ligar “Lembrar neste aparelho”.</p></div>' +
-      '<div class="stack"><button class="btn danger" data-a="forget">Apagar meus dados deste aparelho</button></div><p class="note">Horários já marcados continuam valendo. Para desistir de um, cancele antes de apagar.</p>');
+    var ph = phoneMode() !== 'off';
+    return sheet('Privacidade', '<div class="card"><h3>O que pedimos</h3><p>Seu primeiro nome' + (ph ? ' e, se quiser, o celular' : '') + ', só na hora de confirmar. O nome é para o barbeiro saber quem vem' +
+      (ph ? '; o celular, para avisar se o horário mudar' : '') + '.</p>' +
+      '<h3>Como o horário é identificado</h3><p>Por um código sorteado, que não é calculado a partir de nenhum dado seu. É ele que aparece no QR code.</p>' +
+      '<h3>Por quanto tempo</h3><p>Só enquanto o horário está em aberto. Quando o atendimento termina, ou se você cancelar ou faltar, nome e celular são apagados na hora. Fica apenas o registro anônimo do serviço.</p>' +
+      '<h3>O que não fazemos</h3><p>Sem login, sem cookies, sem rastreamento e sem propaganda. Não existe cadastro nem histórico de clientes.</p>' +
+      '<h3>Neste aparelho</h3><p>Fica guardada a referência do seu horário, para remarcar ou cancelar. Nome e celular só ficam salvos se você ligar “Lembrar neste aparelho”.</p></div>' +
+      (S.sheet.sure ? '<div class="stack"><button class="btn danger" data-a="forget">Sim, cancelar horários e apagar tudo</button><button class="btn gray" data-a="closeSheet">Manter</button></div>'
+        : '<div class="stack"><button class="btn danger" data-a="askForget">Apagar todos os meus dados</button></div>') +
+      '<p class="note">Apagar cancela os seus horários em aberto, remove nome e celular da agenda da barbearia e limpa este aparelho.</p>');
   };
 
   SH.settings = function () {
@@ -328,7 +351,8 @@
     closeSheet: function () { S.sheet = null; },
     quick: function () { resetFlow(); S.quick = true; S.proId = 'any'; go('service'); },
     privacy: function () { S.sheet = { type: 'privacy' }; },
-    forget: function () { B.remove('bs:me'); B.remove(mineKey()); me = { name: '', phone: '' }; S.sheet = null; toast('Dados apagados deste aparelho'); },
+    askForget: function () { S.sheet.sure = true; },
+    forget: function () { B.erase(B.load(mineKey(), [])); B.remove('bs:me'); B.remove(mineKey()); me = { name: '', phone: '' }; S.sheet = null; toast('Seus dados foram apagados'); },
     pickService: function (d) {
       S.serviceId = d.id;
       if (S.quick) {
@@ -387,11 +411,11 @@
 
   var submit = {
     confirm: function (err) {
-      var f = S.form, x = S.sheet, name = (f.name || '').trim(), n = B.digits(f.phone).length;
-      if (name.length < 2) return err('Digite o seu nome.');
-      if (n < 10 || n > 11) return err('Digite o celular com DDD, por exemplo (48) 99999-0000.');
+      var f = S.form, x = S.sheet, name = first(f.name || '');
+      if (name.length < 2) return err('Digite o seu primeiro nome.');
+      if (!phoneOk()) return err('Confira o celular: DDD + número, por exemplo (48) 99999-0000.');
       var a = B.book({
-        proId: x.proId, serviceId: svc() ? svc().id : null, date: S.date, start: x.t, dur: dur(), name: name, phone: B.maskPhone(f.phone),
+        proId: x.proId, serviceId: svc() ? svc().id : null, date: S.date, start: x.t, dur: dur(), name: name, phone: phoneMode() === 'off' ? '' : B.maskPhone(f.phone),
         kind: 'booking'
       });
       if (!a) { S.sheet = null; toast('Esse horário acabou de ser ocupado. Escolha outro.'); return true; }

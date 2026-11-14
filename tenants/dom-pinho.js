@@ -9,6 +9,7 @@
   phone: '(48) 99839-0862',
   accent: { light: '#1F5F4A', dark: '#5FD0A8' },
   grid: 15,              // intervalo da grade de horários, em minutos
+  askPhone: 'optional', // celular do cliente: 'optional', 'required' ou 'off'
   pin: '1234',           // PIN do painel da equipe (demonstração)
   // 0 = domingo ... 6 = sábado. Cada dia: lista de períodos [início, fim].
   hours: {

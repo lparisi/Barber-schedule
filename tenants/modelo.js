@@ -7,6 +7,7 @@
   phone: '(11) 90000-0000',
   accent: { light: '#3F3CC8', dark: '#9C9AFF' },
   grid: 15,
+  askPhone: 'optional', // celular do cliente: 'optional', 'required' ou 'off'
   pin: '1234',
   hours: {
     1: [['09:00', '12:00'], ['13:00', '19:00']],

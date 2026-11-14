@@ -54,6 +54,7 @@
     B.save('bs:tenant', B.tenant.id);
     appts = null;
     seed();
+    B.purge();
   };
   B.pro = function (id) { return B.tenant.pros.filter(function (p) { return p.id === id; })[0]; };
   B.service = function (id) { return B.tenant.services.filter(function (s) { return s.id === id; })[0]; };
@@ -123,10 +124,39 @@
   B.book = function (a) {
     if (!B.isFree(a.proId, a.date, a.start, a.dur)) return null;
     a.id = uid(); a.status = 'booked'; a.createdAt = Date.now();
+    if (a.kind !== 'block') a.code = code();
     B.appts().push(a); B.commit();
     return a;
   };
-  B.setStatus = function (id, status) { var a = B.find(id); if (a) { a.status = status; B.commit(); } };
+  // Retenção: nome e celular existem só enquanto o horário está em aberto.
+  // Concluiu, faltou ou cancelou: os dados pessoais são apagados na hora e
+  // sobra um registro anônimo (horário, serviço, valor) para o caixa do dia.
+  var scrub = function (a) { if (a.kind !== 'block') { a.name = ''; a.phone = ''; } };
+  B.setStatus = function (id, status) {
+    var a = B.find(id); if (!a) return;
+    a.status = status; if (status !== 'booked') scrub(a);
+    B.commit();
+  };
+  // Rede de segurança: nada com nome sobrevive à virada do dia.
+  B.purge = function () {
+    var t = B.today(), n = 0;
+    B.appts().forEach(function (a) { if (a.date < t && (a.name || a.phone) && a.kind !== 'block') { scrub(a); n++; } });
+    if (n) B.commit();
+  };
+  // Direito de eliminação: cancela os horários em aberto e apaga os dados.
+  B.erase = function (ids) {
+    B.appts().forEach(function (a) { if (ids.indexOf(a.id) >= 0) { if (a.status === 'booked') a.status = 'cancelled'; scrub(a); } });
+    B.commit();
+  };
+  // Código do horário: sorteado, não derivado de nenhum dado da pessoa.
+  var ALPHA = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  function code() {
+    var r = new Uint32Array(6), out = '';
+    try { crypto.getRandomValues(r); } catch (e) { for (var i = 0; i < 6; i++) r[i] = Math.floor(Math.random() * 4294967296); }
+    for (var j = 0; j < 6; j++) out += ALPHA[r[j] % ALPHA.length];
+    return out;
+  }
+  B.fmtCode = function (c) { return c ? c.slice(0, 3) + '-' + c.slice(3) : ''; };
   // Horários futuros a partir das referências guardadas no aparelho do cliente.
   B.upcomingFor = function (ids) {
     var t = B.today(), n = B.nowMin();
@@ -152,7 +182,7 @@
               var past = d === 0 && t + s.min <= now;
               list.push({
                 id: 'seed' + list.length, proId: p.id, serviceId: s.id, date: k, start: t, dur: s.min,
-                name: NAMES[Math.floor(rnd() * NAMES.length)], phone: '', demo: true,
+                name: past ? '' : NAMES[Math.floor(rnd() * NAMES.length)], phone: '', demo: true,
                 kind: rnd() < 0.2 && d === 0 ? 'walkin' : 'booking', status: past ? 'done' : 'booked'
               });
               t += s.min;

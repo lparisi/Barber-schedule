@@ -269,3 +269,9 @@ button.row:active, a.row:active { background: var(--fill); }
 .switch:checked::after { transform: translateX(20px); }
 .links { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .card h3 + p + h3 { margin-top: 6px; }
+
+.ticket { display: flex; align-items: center; gap: 16px; width: 100%; background: var(--surface); border-radius: var(--r); padding: 14px; text-align: left; box-shadow: var(--shadow); }
+.ticket .qr { width: 104px; height: 104px; flex: none; border-radius: 8px; }
+.ticket div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ticket small { font-size: 13px; color: var(--label2); }
+.ticket b { font: 700 26px var(--display); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }

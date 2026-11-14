@@ -23,11 +23,19 @@ cancelar ficam na primeira tela, no mesmo aparelho.
 
 ## Privacidade (LGPD)
 
-- Só pede nome e celular, na hora de confirmar. Sem login, cookies ou
+- Pede só o primeiro nome. O celular é configurável por barbearia
+  (`askPhone`: `optional`, `required` ou `off`). Sem login, cookies ou
   rastreamento.
-- O aparelho do cliente guarda apenas a referência do horário. Nome e celular
-  só ficam salvos nele se a pessoa ligar "Lembrar neste aparelho".
-- "Privacidade" na primeira tela explica isso e apaga os dados do aparelho.
+- Cada horário recebe um código sorteado, mostrado também em QR code. Ele não
+  é derivado de nenhum dado da pessoa (um hash de celular seria reversível).
+- Nome e celular existem só enquanto o horário está em aberto: são apagados na
+  hora em que o atendimento é concluído, cancelado ou marcado como falta, e
+  nada com nome passa da virada do dia. Sobra o registro anônimo do serviço.
+- "Privacidade" na primeira tela explica isso e tem "Apagar todos os meus
+  dados": cancela os horários em aberto, apaga nome e celular da agenda e
+  limpa o aparelho.
+- O aparelho do cliente guarda só a referência do horário; nome e celular
+  apenas se a pessoa ligar "Lembrar neste aparelho".
 
 ## Interface
 
