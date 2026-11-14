@@ -8,10 +8,13 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   };
+  // Privacidade: o aparelho só guarda a referência (id) dos horários marcados.
+  // Nome e celular só ficam salvos se a pessoa ligar "Lembrar neste aparelho".
   var me = B.load('bs:me', { name: '', phone: '' });
+  var mineKey = function () { return 'bs:' + B.tenant.id + ':mine'; };
   var S = {
     view: 'home', stack: [], tab: 'service',
-    serviceId: undefined, proId: undefined, date: null, walkin: false, resched: null,
+    serviceId: undefined, proId: undefined, date: null, quick: false, resched: null,
     sheet: null, form: {}, last: null,
     staff: { ok: false, pin: '', pro: B.tenant.pros[0].id, date: B.today() }
   };
@@ -57,7 +60,7 @@
       ':root[data-theme="dark"]{--accent:' + a.dark + '}';
     if (!window.__keepTitle) document.title = B.tenant.name;
   }
-  function resetFlow() { S.serviceId = S.proId = undefined; S.walkin = false; S.resched = null; S.date = null; }
+  function resetFlow() { S.serviceId = S.proId = undefined; S.quick = false; S.resched = null; S.date = null; }
   function go(v) { S.stack.push(S.view); S.view = v; }
   function toTime() {
     var k = B.today(), ps = pros(); S.date = k;
@@ -97,10 +100,11 @@
   function nav(label, right) {
     return '<nav class="nav"><button class="back" data-a="back">' + I.back + esc(label || 'Voltar') + '</button><span class="sp"></span>' + (right || '') + '</nav>';
   }
-  function sheet(title, body) {
+  function sheet(title, body, close) {
     return '<div class="scrim' + (lastSheet === S.sheet.type ? ' noanim' : '') + '"><div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(title) +
-      '"><div class="grab"></div><div class="sh"><h2>' + esc(title) + '</h2><button class="x" data-a="closeSheet" aria-label="Fechar">' + I.x + '</button></div>' + body + '</div></div>';
+      '"><div class="grab"></div><div class="sh"><button class="txt" data-a="closeSheet">' + (close || 'Fechar') + '</button><h2>' + esc(title) + '</h2><span></span></div>' + body + '</div></div>';
   }
+  var validConfirm = function () { var n = B.digits(S.form.phone).length; return (S.form.name || '').trim().length >= 2 && (n === 10 || n === 11); };
 
   /* ---------- telas do cliente ---------- */
   var V = {};
@@ -110,15 +114,15 @@
     var h = '<div class="page"><header class="brand"><div class="logo">' + initials(t.name.replace(/barbearia/i, '') || t.name) + '</div><div><h1>' + esc(t.name) +
       '</h1><p><span class="dot' + (open ? '' : ' off') + '"></span>' + (open ? 'Aberto agora' : 'Fechado agora') + ' · ' + esc(t.city) + '</p></div></header>';
 
-    B.upcomingFor(me.phone).slice(0, 2).forEach(function (a) {
+    B.upcomingFor(B.load(mineKey(), [])).slice(0, 2).forEach(function (a) {
       h += '<section class="card"><span class="eyebrow">SEU HORÁRIO</span><h3>' + when(a.date, a.start) + '</h3><p>' + esc(svcName(a)) + ' · com ' +
         esc(B.pro(a.proId).name) + '</p><div class="acts"><button class="btn sm tinted" data-a="resched" data-id="' + a.id +
         '">Remarcar</button><button class="btn sm danger" data-a="askCancel" data-id="' + a.id + '">Cancelar</button></div></section>';
     });
 
-    var nf = B.anySlots(t.pros, B.today(), 30)[0];
-    if (nf) h += '<section class="card now"><div class="main"><span class="eyebrow">SEM HORA MARCADA?</span><h3>Próxima vaga hoje às ' + B.fmtMin(nf.t) +
-      '</h3><p>Garanta antes de sair de casa.</p></div><button class="btn sm" data-a="walkin">Quero ir hoje</button></section>';
+    var nf = B.nextFree(t.pros, 30);
+    if (nf) h += '<section class="card now"><div class="main"><span class="eyebrow">PRÓXIMO HORÁRIO DISPONÍVEL</span><h3>' + when(nf.date, nf.t) +
+      '</h3><p>Escolha o serviço e confirme.</p></div><button class="btn sm" data-a="quick">Agendar</button></section>';
 
     h += '<section class="group"><h2>Agendar por</h2><div class="seg" role="group" aria-label="Agendar por">' +
       '<button data-a="tab" data-t="service" aria-pressed="' + (S.tab === 'service') + '">Serviço</button>' +
@@ -133,13 +137,13 @@
       return '<div class="row plain"><span class="k"' + (d === wd ? ' style="color:var(--label);font-weight:600"' : '') + '>' + days[d] + '</span><span class="v val">' +
         (r ? r.map(function (p) { return p[0] + '–' + p[1]; }).join(' · ') : 'Fechado') + '</span></div>';
     }).join('') + '</div></section>';
-    return h + '<button class="linkbtn" data-a="staff">Sou da equipe</button></div>';
+    return h + '<div class="links"><button class="linkbtn" data-a="privacy">Privacidade</button><button class="linkbtn" data-a="staff">Sou da equipe</button></div></div>';
   };
 
   V.service = function () {
     var p = S.proId && S.proId !== 'any' ? B.pro(S.proId) : null;
     return '<div class="page">' + nav() + '<header class="head"><h1 class="title">Qual serviço?</h1><p class="sub">' +
-      (S.walkin ? 'Para hoje, na próxima vaga' : p ? 'Com ' + esc(p.name) : '') + '</p></header>' +
+      (S.quick ? 'No próximo horário disponível' : p ? 'Com ' + esc(p.name) : '') + '</p></header>' +
       serviceList(B.servicesOf(p), true) + '</div>';
   };
 
@@ -243,8 +247,9 @@
       kv('Serviço', esc(s ? s.name : 'A decidir na hora')) + kv('Profissional', esc(p.name)) + kv('Valor', B.priceLabel(s)) + '</div>' +
       '<form class="stack" data-form="confirm" novalidate><div class="list"><div class="field"><label for="f-name">Nome</label><input id="f-name" data-f="name" autocomplete="name" autocapitalize="words" placeholder="Seu nome" value="' +
       esc(S.form.name) + '"></div><div class="field"><label for="f-phone">Celular</label><input id="f-phone" data-f="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="(48) 90000-0000" value="' +
-      esc(S.form.phone) + '"></div></div><p class="err" role="alert"></p><p class="note">Sem cadastro e sem senha. O celular só identifica o seu horário.</p>' +
-      '<button class="btn" type="submit">Confirmar agendamento</button></form>');
+      esc(S.form.phone) + '"></div><label class="field toggle" for="f-rem"><span>Lembrar neste aparelho</span><input id="f-rem" class="switch" type="checkbox" role="switch" data-f="remember"' +
+      (S.form.remember ? ' checked' : '') + '></label></div><p class="err" role="alert"></p><p class="note">Sem cadastro, senha ou cookies. Nome e celular servem só para o barbeiro saber quem vem e avisar se algo mudar.</p>' +
+      '<button class="btn" type="submit"' + (validConfirm() ? '' : ' disabled') + '>Confirmar agendamento</button></form>', 'Cancelar');
   };
 
   SH.cancel = function () {
@@ -279,7 +284,7 @@
       return '<option value="' + m + '"' + (m === +f.dur ? ' selected' : '') + '>' + B.fmtDur(m) + '</option>';
     }).join('') + '</select></div>';
     return sheet('Agenda de ' + first(pro.name), seg + '<form class="stack" data-form="novo" novalidate><div class="list">' + fields +
-      '</div><p class="err" role="alert"></p><button class="btn" type="submit">' + (block ? 'Bloquear horário' : f.mode === 'walkin' ? 'Colocar na agenda' : 'Marcar horário') + '</button></form>');
+      '</div><p class="err" role="alert"></p><button class="btn" type="submit">' + (block ? 'Bloquear horário' : f.mode === 'walkin' ? 'Colocar na agenda' : 'Marcar horário') + '</button></form>', 'Cancelar');
   };
 
   SH.appt = function () {
@@ -294,6 +299,13 @@
       '<button class="btn gray" data-a="status" data-s="noshow">Não compareceu</button><button class="btn danger" data-a="status" data-s="cancelled">Cancelar horário</button>';
     else btns = '<button class="btn gray" data-a="status" data-s="booked">Reabrir</button>';
     return sheet(block ? 'Bloqueado' : a.name, '<div class="list">' + rows + '</div><div class="stack">' + btns + '</div>');
+  };
+
+  SH.privacy = function () {
+    return sheet('Privacidade', '<div class="card"><h3>O que pedimos</h3><p>Nome e celular, só na hora de confirmar. Servem para o barbeiro saber quem vem e avisar se o horário mudar.</p>' +
+      '<h3>O que não fazemos</h3><p>Sem login, sem cookies, sem rastreamento e sem propaganda. Seus dados não são vendidos nem repassados.</p>' +
+      '<h3>Neste aparelho</h3><p>Fica guardada só a referência do seu horário, para você remarcar ou cancelar. Nome e celular só ficam salvos se você ligar “Lembrar neste aparelho”.</p></div>' +
+      '<div class="stack"><button class="btn danger" data-a="forget">Apagar meus dados deste aparelho</button></div><p class="note">Horários já marcados continuam valendo. Para desistir de um, cancele antes de apagar.</p>');
   };
 
   SH.settings = function () {
@@ -314,13 +326,15 @@
       if (S.view === 'home') { resetFlow(); if (location.hash) history.replaceState(null, '', location.pathname + location.search); }
     },
     closeSheet: function () { S.sheet = null; },
-    walkin: function () { resetFlow(); S.walkin = true; S.proId = 'any'; go('service'); },
+    quick: function () { resetFlow(); S.quick = true; S.proId = 'any'; go('service'); },
+    privacy: function () { S.sheet = { type: 'privacy' }; },
+    forget: function () { B.remove('bs:me'); B.remove(mineKey()); me = { name: '', phone: '' }; S.sheet = null; toast('Dados apagados deste aparelho'); },
     pickService: function (d) {
       S.serviceId = d.id;
-      if (S.walkin) {
-        var s = B.anySlots(pros(), B.today(), dur());
-        if (s.length) { S.date = B.today(); go('time'); return openConfirm(s[0].t, s[0].proId); }
-        S.walkin = false; toast('Hoje não há mais vaga para esse serviço. Veja os próximos dias.');
+      if (S.quick) {
+        var nf = B.nextFree(pros(), dur()); S.quick = false;
+        if (nf) { S.date = nf.date; go('time'); return openConfirm(nf.t, nf.proId); }
+        toast('Sem horários nos próximos dias para esse serviço.');
         return toTime();
       }
       if (S.proId === undefined) {
@@ -365,7 +379,7 @@
       toast({ done: 'Atendimento concluído', noshow: 'Marcado como falta', cancelled: a.kind === 'block' ? 'Bloqueio removido' : 'Horário cancelado', booked: 'Horário reaberto' }[d.s]);
     }
   };
-  function openConfirm(t, proId) { S.form = { name: me.name, phone: me.phone }; S.sheet = { type: 'confirm', t: t, proId: proId }; }
+  function openConfirm(t, proId) { S.form = { name: me.name, phone: me.phone, remember: !!me.name }; S.sheet = { type: 'confirm', t: t, proId: proId }; }
   function openNovo(mode, start) {
     S.form = { mode: mode, name: '', phone: '', note: '', serviceId: B.servicesOf(B.pro(S.staff.pro))[0].id, start: start, dur: 60 };
     S.sheet = { type: 'novo' };
@@ -378,11 +392,12 @@
       if (n < 10 || n > 11) return err('Digite o celular com DDD, por exemplo (48) 99999-0000.');
       var a = B.book({
         proId: x.proId, serviceId: svc() ? svc().id : null, date: S.date, start: x.t, dur: dur(), name: name, phone: B.maskPhone(f.phone),
-        kind: S.walkin && S.date === B.today() ? 'walkin' : 'booking'
+        kind: 'booking'
       });
       if (!a) { S.sheet = null; toast('Esse horário acabou de ser ocupado. Escolha outro.'); return true; }
       if (S.resched) B.setStatus(S.resched, 'cancelled');
-      me = { name: name, phone: a.phone }; B.save('bs:me', me);
+      if (f.remember) { me = { name: name, phone: a.phone }; B.save('bs:me', me); } else { me = { name: '', phone: '' }; B.remove('bs:me'); }
+      B.save(mineKey(), B.load(mineKey(), []).concat(a.id).slice(-10));
       S.last = a; S.sheet = null; resetFlow(); S.stack = []; S.view = 'done';
       return true;
     },
@@ -430,9 +445,17 @@
   $app.addEventListener('input', function (e) {
     var f = e.target.dataset.f; if (!f) return;
     if (e.target.type === 'tel') e.target.value = B.maskPhone(e.target.value);
-    S.form[f] = e.target.value;
+    S.form[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    var fm = e.target.form;
+    if (fm && fm.dataset.form === 'confirm') fm.querySelector('[type=submit]').disabled = !validConfirm();
     var box = e.target.form && e.target.form.querySelector('.err'); if (box) box.textContent = '';
     if (e.target.dataset.r) render();
+  });
+  // Valida o celular assim que a pessoa sai do campo, sem esperar o envio.
+  $app.addEventListener('focusout', function (e) {
+    if (e.target.id !== 'f-phone' || !e.target.form) return;
+    var n = B.digits(e.target.value).length;
+    if (n && n !== 10 && n !== 11) e.target.form.querySelector('.err').textContent = 'Confira o celular: DDD + número, por exemplo (48) 99999-0000.';
   });
   $app.addEventListener('submit', function (e) {
     e.preventDefault();

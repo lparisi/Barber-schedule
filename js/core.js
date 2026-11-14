@@ -15,6 +15,8 @@
     try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
   };
 
+  B.remove = function (k) { delete mem[k]; try { localStorage.removeItem(k); } catch (e) {} };
+
   /* ---------- datas ---------- */
   var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
   B.dateKey = function (d) { return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); };
@@ -125,12 +127,11 @@
     return a;
   };
   B.setStatus = function (id, status) { var a = B.find(id); if (a) { a.status = status; B.commit(); } };
-  B.upcomingFor = function (phone) {
-    var d = B.digits(phone), t = B.today(), n = B.nowMin();
-    if (!d) return [];
+  // Horários futuros a partir das referências guardadas no aparelho do cliente.
+  B.upcomingFor = function (ids) {
+    var t = B.today(), n = B.nowMin();
     return B.appts().filter(function (a) {
-      return a.status === 'booked' && a.kind !== 'block' && B.digits(a.phone) === d &&
-        (a.date > t || (a.date === t && a.start + a.dur > n));
+      return ids.indexOf(a.id) >= 0 && a.status === 'booked' && (a.date > t || (a.date === t && a.start + a.dur > n));
     }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.start - b.start; });
   };
 

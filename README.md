@@ -18,8 +18,24 @@ de demonstração `1234`.
 3. Toca num horário.
 4. Confirma nome e celular (preenchidos sozinhos da segunda vez em diante).
 
-"Quero ir hoje" pega a próxima vaga do dia. Remarcar e cancelar ficam na
-primeira tela, no mesmo aparelho.
+O cartão "Próximo horário disponível" leva direto à primeira vaga. Remarcar e
+cancelar ficam na primeira tela, no mesmo aparelho.
+
+## Privacidade (LGPD)
+
+- Só pede nome e celular, na hora de confirmar. Sem login, cookies ou
+  rastreamento.
+- O aparelho do cliente guarda apenas a referência do horário. Nome e celular
+  só ficam salvos nele se a pessoa ligar "Lembrar neste aparelho".
+- "Privacidade" na primeira tela explica isso e apaga os dados do aparelho.
+
+## Interface
+
+Segue as Human Interface Guidelines da Apple: alvos de toque de 44 pt, texto
+base de 17 pt, folhas com Cancelar à esquerda, botão principal desligado até
+os dados obrigatórios estarem certos, validação ao sair do campo, interruptor
+dentro de linha de lista, tema claro e escuro, menos movimento quando o
+sistema pede.
 
 ## Nova barbearia
 

@@ -137,7 +137,7 @@ button.row:active, a.row:active { background: var(--fill); }
 .btn.tinted { background: var(--tint); color: var(--accent); }
 .btn.gray { background: var(--fill); color: var(--label); }
 .btn.danger { background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--red); }
-.btn.sm { min-height: 36px; padding: 0 14px; border-radius: 18px; width: auto; font-size: 15px; }
+.btn.sm { min-height: 44px; padding: 0 18px; border-radius: 22px; width: auto; font-size: 15px; }
 
 /* ---------- dias e horários ---------- */
 .days { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 6px; scrollbar-width: none; scroll-snap-type: x proximity; }
@@ -168,9 +168,9 @@ button.row:active, a.row:active { background: var(--fill); }
   animation: rise 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 .sheet .grab { width: 36px; height: 5px; border-radius: 3px; background: var(--label3); opacity: 0.5; margin: 0 auto 2px; flex: none; }
-.sheet .sh { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.sheet h2 { font: 700 22px/1.2 var(--display); letter-spacing: -0.01em; margin: 0; }
-.sheet .x { width: 32px; height: 32px; border-radius: 50%; background: var(--fill); display: grid; place-items: center; color: var(--label2); flex: none; }
+.sheet .sh { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin: -4px -8px; }
+.sheet h2 { font: 600 17px/1.2 var(--font); margin: 0; text-align: center; overflow-wrap: anywhere; }
+.sheet .txt { justify-self: start; min-height: 44px; padding: 0 8px; color: var(--accent); }
 @keyframes rise { from { transform: translateY(100%); } }
 @keyframes fade { from { opacity: 0; } }
 @media (min-width: 600px) {
@@ -201,7 +201,7 @@ button.row:active, a.row:active { background: var(--fill); }
 /* ---------- painel da equipe ---------- */
 .chips { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px; scrollbar-width: none; }
 .chips::-webkit-scrollbar { display: none; }
-.chip { flex: none; min-height: 40px; padding: 0 14px 0 6px; border-radius: 20px; background: var(--surface); display: inline-flex; align-items: center; gap: 8px; font-weight: 500; font-size: 15px; }
+.chip { flex: none; min-height: 44px; padding: 0 14px 0 8px; border-radius: 22px; background: var(--surface); display: inline-flex; align-items: center; gap: 8px; font-weight: 500; font-size: 15px; }
 .chip .av { width: 28px; height: 28px; font-size: 12px; }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 .chip[aria-pressed="true"] .av { background: color-mix(in srgb, var(--on-accent) 22%, transparent); color: inherit; }
@@ -250,3 +250,22 @@ button.row:active, a.row:active { background: var(--fill); }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 .noanim, .noanim .sheet { animation: none; }
+
+/* Regras tiradas das Human Interface Guidelines da Apple: alvo de toque de
+   44 pt, botão principal desligado até os dados obrigatórios estarem certos,
+   interruptor só dentro de linha de lista, Cancelar no canto esquerdo da folha. */
+.btn:disabled { opacity: 0.38; cursor: default; }
+.field.toggle { cursor: pointer; justify-content: space-between; }
+.field.toggle span { flex: 1; font-size: 16px; }
+.switch {
+  appearance: none; -webkit-appearance: none; flex: none !important; width: 51px; height: 31px !important; border-radius: 16px;
+  background: var(--fill) !important; position: relative; cursor: pointer; transition: background 0.2s; margin: 0;
+}
+.switch::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%;
+  background: #FFFFFF; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25); transition: transform 0.2s;
+}
+.switch:checked { background: var(--green) !important; }
+.switch:checked::after { transform: translateX(20px); }
+.links { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.card h3 + p + h3 { margin-top: 6px; }
